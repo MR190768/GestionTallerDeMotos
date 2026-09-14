@@ -1,36 +1,35 @@
 # Sistema de Gestión para Taller de Motocicletas
 
-Este repositorio contiene la documentación y la planificación del proyecto **"Diagnóstico de una empresa salvadoreña"**, enfocado en el desarrollo de una solución integral para optimizar las operaciones de un taller de motocicletas.
+Este repositorio contiene el Backend (Node.js/Express) y el Frontend (React Native/Expo) de un sistema de gestión y control de taller de motocicletas.
 
-## Descripción del Proyecto
-El proyecto busca resolver los retos administrativos y operativos de un taller de motocicletas, tales como la falta de control en el registro de servicios, la gestión manual de clientes y la ausencia de un control de inventario eficiente. La solución propuesta es un sistema de gestión integral con acceso web y móvil.
+## Arquitectura
 
-## Stack Tecnológico
-Para garantizar una experiencia ágil y centralizada, se han seleccionado las siguientes tecnologías:
-*   **Frontend Móvil:** React Native (para una experiencia nativa y portabilidad).
-*   **Backend:** Express.js (Node.js) (para un desarrollo ligero y escalable).
-*   **Base de Datos:** MySQL (para el manejo de datos estructurados y transacciones).
-*   **Autenticación:** JWT + bcrypt.
+El sistema está dividido en dos partes principales:
+1. **Backend**: API RESTful construida con Node.js, Express y MySQL. Sigue una arquitectura limpia de N-Capas (Rutas -> Controladores -> Servicios -> Repositorios).
+2. **Frontend**: Aplicación móvil construida con React Native y Expo SDK 56.
 
-## Estructura del Proyecto
-*   **Análisis del Problema:** Diagnóstico basado en entrevistas con el dueño del taller.
-*   **Diseño Técnico:** Arquitectura, Modelo Entidad-Relación y definición de Endpoints API REST.
-*   **Planificación (Scrum):**
-    *   **Sprint 1:** Configuración de Entorno y Arquitectura Base.
-    *   **Sprint 2:** Gestión de Clientes, Vehículos e Inventario.
-    *   **Sprint 3:** Módulo de Servicios y Flexibilidad de Edición.
-    *   **Sprint 4:** Control Financiero, Pruebas y Despliegue.
+## Control de Acceso Basado en Roles (RBAC)
 
-## Equipo de Desarrollo
-El proyecto es realizado por estudiantes de la Universidad Don Bosco:
-*   Gerson Adonai Martínez Ramírez
-*   Javier Ernesto Pérez Joaquín
-*   Franklin Adonay Cruz Menjivar
-*   Leonel Oswaldo Rosales Franco
-*   Karla Lissette Mejía Ortiz
-*   Oscar Alberto Alas Guzman
+El sistema cuenta con dos roles principales:
+- **Administrador (`admin`)**: Acceso total al sistema. Es el único que puede gestionar usuarios y finanzas (deudas/pagos).
+- **Mecánico (`mecanico`)**: Acceso limitado a la gestión del taller operativo (clientes, motocicletas, repuestos, servicios). No tiene acceso a la gestión de usuarios ni módulos financieros.
 
-## Documentación Original
-La propuesta completa se encuentra en el archivo adjunto: `DSE defensa 1.pdf`
-README.md
-Mostrando README.md.
+### Credenciales por defecto
+Al inicializar la base de datos con `init.sql`, se crea un usuario administrador por defecto:
+- **Email**: `admin@taller.com`
+- **Contraseña**: `password`
+
+## Instrucciones de Ejecución
+
+### Backend
+1. Navega a la carpeta `backend/`.
+2. Ejecuta `npm install`.
+3. Configura tus variables de entorno en un archivo `.env` (puedes usar `.env.example` como base).
+4. Inicializa tu base de datos MySQL usando el script provisto en `backend/database/init.sql`.
+5. Inicia el servidor con `npm run dev`.
+
+### Frontend
+1. Navega a la carpeta `frontend/`.
+2. Ejecuta `npm install`.
+3. Configura tu IP local en el archivo `.env` (ejemplo: `EXPO_PUBLIC_API_URL=http://192.168.1.31:3000/api`).
+4. Inicia la aplicación con `npm start` (o `npx expo start --lan` si tienes problemas de adaptadores de red virtuales en Windows).
