@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import UserManagementScreen from '../screens/admin/UserManagementScreen';
 import MechanicDashboardScreen from '../screens/mechanic/MechanicDashboardScreen';
 import { Button } from 'react-native';
+import colors from '../theme/colors';
 
 const Stack = createNativeStackNavigator();
 
@@ -13,7 +14,10 @@ export default function MainNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerRight: () => <Button title="Cerrar Sesión" color="#dc3545" onPress={logout} />
+        headerStyle: { backgroundColor: colors.headerBackground },
+        headerTintColor: colors.textLight,
+        headerTitleStyle: { fontWeight: 'bold' },
+        headerRight: () => <Button title="Cerrar Sesión" color={colors.danger} onPress={logout} />
       }}
     >
       {userInfo?.role === 'admin' ? (

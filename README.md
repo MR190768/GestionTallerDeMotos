@@ -22,6 +22,12 @@ Al inicializar la base de datos con `init.sql`, se crea un usuario administrador
 ## Instrucciones de Ejecución
 
 ### Backend
+
+#### Requisitos Previos
+- Node.js (v16 o superior)
+- MySQL (v8.0 o superior)
+
+#### Pasos
 1. Navega a la carpeta `backend/`.
 2. Ejecuta `npm install`.
 3. Configura tus variables de entorno en un archivo `.env` (puedes usar `.env.example` como base).
@@ -29,7 +35,15 @@ Al inicializar la base de datos con `init.sql`, se crea un usuario administrador
 5. Inicia el servidor con `npm run dev`.
 
 ### Frontend
+
+#### Requisitos Previos
+- Node.js
+- Expo CLI (`npm install -g expo-cli`)
+- Aplicación Expo Go en tu dispositivo móvil o un Emulador configurado.
+
+#### Pasos
 1. Navega a la carpeta `frontend/`.
 2. Ejecuta `npm install`.
 3. Configura tu IP local en el archivo `.env` (ejemplo: `EXPO_PUBLIC_API_URL=http://192.168.1.31:3000/api`).
-4. Inicia la aplicación con `npm start` (o `npx expo start --lan` si tienes problemas de adaptadores de red virtuales en Windows).
+4. Inicia la aplicación con `npm start` o `npx expo start --lan`.
+5. **Importante**: Para que la app en un dispositivo físico o emulador pueda comunicarse con tu API local, cambia `http://localhost:3000/api` en tu archivo `.env` por la **dirección IP de tu máquina** en la red local (ej. `EXPO_PUBLIC_API_URL=http://192.168.1.50:3000/api`). Si se usa expo go descargar https://expo.dev/go?sdkVersion=56&platform=android&device=true SDK 56, si localmente no se conecta utilizar > $env:REACT_NATIVE_PACKAGER_HOSTNAME="tu_ip" npx expo start  y escanea el código QR con Expo Go (en Android) o usa la aplicación de Cámara (en iOS).

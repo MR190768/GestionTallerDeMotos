@@ -12,16 +12,51 @@ export default function MechanicDashboardScreen() {
       <Text style={styles.subtitle}>Aquí verás las órdenes de servicio, clientes y motos asignadas.</Text>
       
       <View style={styles.card}>
-        <Text>Acceso Permitido a: Clientes, Motos, Repuestos y Servicios.</Text>
-        <Text style={{color: 'red', marginTop: 10}}>Acceso Bloqueado a: Usuarios y Finanzas.</Text>
+        <Text style={styles.cardHeader}>Módulos Asignados:</Text>
+        <Text style={styles.allowedText}>✓ Acceso Permitido a: Clientes, Motos, Repuestos y Servicios.</Text>
+        <Text style={styles.deniedText}>✕ Acceso Bloqueado a: Usuarios y Finanzas.</Text>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: colors.background },
-  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 5 },
-  subtitle: { fontSize: 16, color: colors.secondary, marginBottom: 20 },
-  card: { padding: 20, backgroundColor: colors.white, borderRadius: 8, borderWidth: 1, borderColor: '#ddd' }
+  container: { 
+    flex: 1, 
+    padding: 20, 
+    backgroundColor: colors.background 
+  },
+  title: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    marginBottom: 6, 
+    color: colors.text 
+  },
+  subtitle: { 
+    fontSize: 15, 
+    color: colors.textSecondary, 
+    marginBottom: 20 
+  },
+  card: { 
+    padding: 20, 
+    backgroundColor: colors.card, 
+    borderRadius: 8, 
+    borderWidth: 1, 
+    borderColor: colors.border 
+  },
+  cardHeader: { 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    color: colors.text, 
+    marginBottom: 10 
+  },
+  allowedText: { 
+    color: colors.success, 
+    fontSize: 14, 
+    marginBottom: 8 
+  },
+  deniedText: { 
+    color: colors.danger, 
+    fontSize: 14 
+  }
 });

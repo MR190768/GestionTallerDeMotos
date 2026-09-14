@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import colors from '../../theme/colors';
 
@@ -25,19 +25,67 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Gestión de Taller</Text>
       <TextInput 
-        style={styles.input} placeholder="Correo Electrónico" value={email}
-        onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address"
+        style={styles.input} 
+        placeholder="Correo Electrónico" 
+        placeholderTextColor={colors.textMuted}
+        value={email}
+        onChangeText={setEmail} 
+        autoCapitalize="none" 
+        keyboardType="email-address"
       />
       <TextInput 
-        style={styles.input} placeholder="Contraseña" value={password}
-        onChangeText={setPassword} secureTextEntry
+        style={styles.input} 
+        placeholder="Contraseña" 
+        placeholderTextColor={colors.textMuted}
+        value={password}
+        onChangeText={setPassword} 
+        secureTextEntry
       />
-      {loading ? <ActivityIndicator size="large" color={colors.primary} /> : <Button title="Iniciar Sesión" onPress={handleLogin} />}
+      {loading ? (
+        <ActivityIndicator size="large" color={colors.primary} />
+      ) : (
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
+          <Text style={styles.buttonText}>Iniciar Sesión</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
+
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: colors.background },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 15, borderRadius: 5, backgroundColor: colors.white }
+  container: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    padding: 24, 
+    backgroundColor: colors.background 
+  },
+  title: { 
+    fontSize: 26, 
+    fontWeight: 'bold', 
+    marginBottom: 24, 
+    textAlign: 'center',
+    color: colors.text 
+  },
+  input: { 
+    borderWidth: 1, 
+    borderColor: colors.border, 
+    padding: 14, 
+    marginBottom: 16, 
+    borderRadius: 8, 
+    backgroundColor: colors.inputBackground,
+    color: colors.text,
+    fontSize: 16
+  },
+  button: {
+    backgroundColor: colors.primary,
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8
+  },
+  buttonText: {
+    color: colors.textDark,
+    fontSize: 16,
+    fontWeight: 'bold'
+  }
 });
