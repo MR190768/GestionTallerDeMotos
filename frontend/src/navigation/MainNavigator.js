@@ -17,6 +17,8 @@ import AddClientScreen from '../screens/clients/AddClientScreen';
 import ClientInformationScreen from '../screens/clients/ClientInformationScreen';
 import MotorcyclesScreen from '../screens/motorcycles/MotorcyclesScreen';
 import ServicesScreen from '../screens/services/ServicesScreen';
+import ServiceDetailScreen from '../screens/services/ServiceDetailScreen';
+import CreateServiceScreen from '../screens/services/CreateServiceScreen';
 import PartsScreen from '../screens/parts/PartsScreen';
 import DebtsScreen from '../screens/debts/DebtsScreen';
 
@@ -39,7 +41,13 @@ export default function MainNavigator() {
         headerStyle: { backgroundColor: colors.headerBackground },
         headerTintColor: colors.textLight,
         headerTitleStyle: { fontWeight: 'bold' },
-        headerRight: () => <Button title="Cerrar Sesión" color={colors.danger} onPress={logout} />
+        headerRight: () => (
+          <Button
+            title="Cerrar Sesión"
+            color={colors.danger}
+            onPress={logout}
+          />
+        )
       }}
     >
       {/* Dashboards de inicio */}
@@ -48,6 +56,7 @@ export default function MainNavigator() {
         component={UserDashboardScreen}
         options={{ title: 'Panel de Control' }}
       />
+
       <Stack.Screen
         name="AdminDashboard"
         component={UserManagementScreen}
@@ -60,11 +69,13 @@ export default function MainNavigator() {
         component={ClientsScreen}
         options={{ title: 'Gestión de Clientes' }}
       />
+
       <Stack.Screen
         name="ClientInformation"
         component={ClientInformationScreen}
         options={{ title: 'Información del Cliente' }}
       />
+
       <Stack.Screen
         name="AddClient"
         component={AddClientScreen}
@@ -83,6 +94,18 @@ export default function MainNavigator() {
         name="Services"
         component={ServicesScreen}
         options={{ title: 'Órdenes de Servicio' }}
+      />
+
+      <Stack.Screen
+        name="ServiceDetail"
+        component={ServiceDetailScreen}
+        options={{ title: 'Detalle de la Orden' }}
+      />
+
+      <Stack.Screen
+        name="CreateService"
+        component={CreateServiceScreen}
+        options={{ title: 'Nueva Orden' }}
       />
 
       {/* Módulo de Repuestos */}
@@ -105,11 +128,13 @@ export default function MainNavigator() {
         component={AddUserScreen}
         options={{ title: 'Registrar Usuario' }}
       />
+
       <Stack.Screen
         name="Roles"
         component={RolesScreen}
         options={{ title: 'Gestión de Roles' }}
       />
+
       <Stack.Screen
         name="RoleForm"
         component={RoleFormScreen}
