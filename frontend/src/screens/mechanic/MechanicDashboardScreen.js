@@ -1,9 +1,9 @@
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import colors from '../../theme/colors';
 
-export default function MechanicDashboardScreen() {
+export default function MechanicDashboardScreen({navigation}) {
   const { userInfo } = useContext(AuthContext);
 
   return (
@@ -16,6 +16,11 @@ export default function MechanicDashboardScreen() {
         <Text style={styles.allowedText}>✓ Acceso Permitido a: Clientes, Motos, Repuestos y Servicios.</Text>
         <Text style={styles.deniedText}>✕ Acceso Bloqueado a: Usuarios y Finanzas.</Text>
       </View>
+      
+      {/*Boton de prueba modulo servicios */}
+    <TouchableOpacity style={styles.serviceButton}onPress={() => navigation.navigate('Services')}>
+      <Text style={styles.serviceButtonText}>Ver Órdenes de Servicio</Text>
+    </TouchableOpacity>
     </View>
   );
 }
@@ -58,5 +63,20 @@ const styles = StyleSheet.create({
   deniedText: { 
     color: colors.danger, 
     fontSize: 14 
-  }
+  },
+
+  //estilos de boton de prueba
+  serviceButton: {
+  backgroundColor: colors.primary,
+  padding: 14,
+  borderRadius: 8,
+  alignItems: 'center',
+  marginTop: 20,
+},
+
+serviceButtonText: {
+  color: colors.textDark,
+  fontSize: 16,
+  fontWeight: 'bold',
+}
 });
