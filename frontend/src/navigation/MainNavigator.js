@@ -6,6 +6,8 @@ import MechanicDashboardScreen from '../screens/mechanic/MechanicDashboardScreen
 import { Button } from 'react-native';
 import colors from '../theme/colors';
 import ClientsScreen from '../screens/clients/ClientsScreen';
+import AddClientScreen from '../screens/clients/AddClientScreen';
+import ClientInformationScreen from '../screens/clients/ClientInformationScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -24,6 +26,8 @@ export default function MainNavigator() {
       {userInfo?.role === 'admin' ? (<>
         <Stack.Screen name="AdminDashboard" component={UserManagementScreen} options={{ title: 'Panel de Administración' }} />
         <Stack.Screen name="Client" component={ClientsScreen} options={{ title: 'Clientes' }} />
+        <Stack.Screen name="ClientInformation" component={ClientInformationScreen} options={{ title: 'Agregar nuevo cliente' }} />
+        <Stack.Screen name="AddClient" component={AddClientScreen} options={{ title: 'Informacion del Cliente' }} />
         </>
         
       ) : (<>

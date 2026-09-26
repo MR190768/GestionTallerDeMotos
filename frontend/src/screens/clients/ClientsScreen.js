@@ -64,6 +64,37 @@ const handleSearch = async (text) => {
     }
   };
 
+  // --- Eliminar Cliente ---
+
+  const handleDeleteClient = (client) => {
+  Alert.alert(
+    'Eliminar cliente',
+    `¿Seguro que quieres eliminar a ${client.name}? \n\n Eliminar a este cliente eliminara todos sus servicios y motocicletas asociadas \n\n ¿Desea continuar con la eliminacion?`,
+    [
+      {
+        text: 'No',
+        style: 'cancel',
+      },
+      {
+        text: 'Sí',
+        style: colors.error,
+        onPress: async () => {
+          try {
+            await deleteClient(client.id);
+            await loadClients();
+          } catch (error) {
+            Alert.alert(
+              'Error',
+              error.response?.data?.error ||
+                'No se pudo eliminar el cliente'
+            );
+          }
+        },
+      },
+    ]
+  );
+};
+
 
    useEffect(() => {
     loadClients();
@@ -80,6 +111,12 @@ const handleSearch = async (text) => {
         onChangeText={handleSearch}
       />
 
+      <TouchableOpacity style = {styles.btnNewClient} onPress = {() => navigation.navigate('AddClient')}>
+        <Text style={styles.btnNewClientText}>
+            Agregar nuevo cliente
+        </Text>
+      </TouchableOpacity>
+
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -91,7 +128,7 @@ const handleSearch = async (text) => {
           data={clients}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <View style={styles.clientCard}>
+            <TouchableOpacity style={styles.clientCard} onPress = {() => navigation.navigate('ClientInformation', {clientId : item.id})}>
               <Text style={styles.clientName}>{item.name}</Text>
 
               {item.email && (
@@ -109,7 +146,14 @@ const handleSearch = async (text) => {
                   Dirección: {item.address}
                 </Text>
               )}
-            </View>
+
+              <TouchableOpacity style={styles.btnDelete} onPress={() => handleDeleteClient(item)}>
+                <Text style={styles.btnDeleteText}>
+                  Eliminar
+                </Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+            
           )}
           ListEmptyComponent={
             <Text style={styles.emptyText}>
@@ -156,5 +200,29 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderColor: colors.border,
     marginBottom:10
+  },
+  btnDelete: {
+    backgroundColor: colors.danger,
+    marginTop: 8,
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center'
+  },
+  btnDeleteText:{
+    color: colors.textLight,
+    fontWeight: 'bold',
+    fontSize: 15
+  },
+  btnNewClient: {
+    backgroundColor: colors.primary,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 15
+  },
+  btnNewClientText: {
+    color: colors.textDark,
+    fontWeight: 'bold',
+    fontSize: 15
   }
 });
