@@ -4,7 +4,7 @@ import axiosClient from '../../api/axiosClient';
 import { AuthContext } from '../../context/AuthContext';
 import colors from '../../theme/colors';
 
-export default function UserManagementScreen() {
+export default function UserManagementScreen({navigation}) {
   const { userInfo } = useContext(AuthContext);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +34,11 @@ export default function UserManagementScreen() {
         onPress={() => Alert.alert('Nuevo Usuario', 'Formulario para nuevo usuario')}
       >
         <Text style={styles.primaryButtonText}>+ Registrar Nuevo Usuario</Text>
+      </TouchableOpacity>
+
+      {/*Boton para ir a clientes*/}
+      <TouchableOpacity style={styles.clientButton}onPress={() => navigation.navigate('Client')}>
+          <Text style={styles.clientBtnText}>Clientes</Text>
       </TouchableOpacity>
       
       {loading ? (
@@ -116,5 +121,17 @@ const styles = StyleSheet.create({
     color: colors.primary, 
     fontWeight: '600',
     fontSize: 13
+  },
+  clientButton: {
+    backgroundColor: colors.mintGreen,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  clientBtnText: {
+    color: colors.textDark,
+    fontSize: 16,
+    fontWeight: 'bold'
   }
 });

@@ -5,6 +5,7 @@ import UserManagementScreen from '../screens/admin/UserManagementScreen';
 import MechanicDashboardScreen from '../screens/mechanic/MechanicDashboardScreen';
 import { Button } from 'react-native';
 import colors from '../theme/colors';
+import ClientsScreen from '../screens/clients/ClientsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -20,10 +21,15 @@ export default function MainNavigator() {
         headerRight: () => <Button title="Cerrar Sesión" color={colors.danger} onPress={logout} />
       }}
     >
-      {userInfo?.role === 'admin' ? (
+      {userInfo?.role === 'admin' ? (<>
         <Stack.Screen name="AdminDashboard" component={UserManagementScreen} options={{ title: 'Panel de Administración' }} />
-      ) : (
+        <Stack.Screen name="Client" component={ClientsScreen} options={{ title: 'Clientes' }} />
+        </>
+        
+      ) : (<>
         <Stack.Screen name="MechanicDashboard" component={MechanicDashboardScreen} options={{ title: 'Taller - Servicios' }} />
+        </>
+        
       )}
     </Stack.Navigator>
   );
