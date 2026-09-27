@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -14,6 +15,7 @@ import colors from '../../theme/colors';
 import {
   getAllClients,
   searchClients,
+  deleteClient
 } from '../../services/clientService';
 
 export default function ClientsScreen({navigation}) {
@@ -97,9 +99,11 @@ const handleSearch = async (text) => {
 };
 
 
-   useEffect(() => {
+   useFocusEffect(
+  useCallback(() => {
     loadClients();
-  }, []);
+  }, [])
+);
 
   // --- Logica de los filtros ---
   const filteredClients = clients
@@ -113,6 +117,9 @@ const handleSearch = async (text) => {
     .sort((a, b) => {
         if (activeFilter === 'frecuentes') {
             return Number(b.serviceCount) - Number(a.serviceCount);
+        }
+        if (activeFilter === 'todos') {
+            return new Date(a.createdAt) + new Date(b.createdAt);
         }
 
         return a.name.localeCompare(b.name);
@@ -185,11 +192,18 @@ const handleSearch = async (text) => {
                 Dinero de deuda: ${item.debt}
               </Text>
 
-              <TouchableOpacity style={styles.btnDelete} onPress={() => handleDeleteClient(item)}>
-                <Text style={styles.btnDeleteText}>
-                  Eliminar
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.buttons}>
+                <TouchableOpacity style={styles.btnEdit} onPress={() => navigation.navigate('AddClient', {clientId: item.id})}activeOpacity={0.7}>
+                  <Text style={styles.btnEditText}>
+                    Editar
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.btnDelete} onPress={() => handleDeleteClient(item)}>
+                  <Text style={styles.btnDeleteText}>
+                   Eliminar
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </TouchableOpacity>
             
           )}
@@ -252,6 +266,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 15
   },
+  btnEdit: {
+    backgroundColor: colors.primary,
+    marginTop: 8,
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center'
+  },
+  btnEditText:{
+    color: colors.textDark,
+    fontWeight: 'bold',
+    fontSize: 15
+  },
   btnNewClient: {
     backgroundColor: colors.primary,
     padding: 14,
@@ -287,5 +313,10 @@ const styles = StyleSheet.create({
   activeFilterText: {
     color: colors.textDark,
     fontWeight: 'bold',
+  },
+  buttons: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8
   }
 });

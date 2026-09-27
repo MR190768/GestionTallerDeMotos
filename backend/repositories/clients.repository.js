@@ -20,7 +20,13 @@ const getAll = async () => {
         LEFT JOIN (
             SELECT
                 m.client_id,
-                COUNT(s.id) AS serviceCount
+                SUM(
+                    CASE
+                        WHEN s.status IN ('PENDING', 'IN_PROGRESS')
+                        THEN 1
+                        ELSE 0
+                    END
+                    ) AS serviceCount
             FROM motorcycles m
             LEFT JOIN services s
                 ON s.motorcycle_id = m.id
@@ -80,7 +86,13 @@ const getById = async (id) => {
         LEFT JOIN (
             SELECT
                 m.client_id,
-                COUNT(s.id) AS serviceCount
+                SUM(
+                    CASE
+                        WHEN s.status IN ('PENDING', 'IN_PROGRESS')
+                        THEN 1
+                        ELSE 0
+                    END
+                    ) AS serviceCount
             FROM motorcycles m
             LEFT JOIN services s
                 ON s.motorcycle_id = m.id
