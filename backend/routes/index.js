@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const authRoutes = require('./auth.routes');
 const usersRoutes = require('./users.routes');
+const rolesRoutes = require('./roles.routes');
 const clientsRoutes = require('./clients.routes');
 const motorcyclesRoutes = require('./motorcycles.routes');
 const servicesRoutes = require('./services.routes');
@@ -11,6 +12,7 @@ const router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/users', usersRoutes);
+router.use('/roles', rolesRoutes);
 router.use('/clients', clientsRoutes);
 router.use('/motorcycles', motorcyclesRoutes);
 router.use('/services', servicesRoutes);

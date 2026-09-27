@@ -1,4 +1,5 @@
 const usersService = require('../services/users.service');
+
 const getAll = async (req, res, next) => {
     try {
         const data = await usersService.getAll();
@@ -7,21 +8,39 @@ const getAll = async (req, res, next) => {
         next(error);
     }
 };
+
 const create = async (req, res, next) => {
     try {
-        const { name, email, password, role } = req.body;
-        const result = await usersService.createUser(name, email, password, role);
+        const { name, email, password, role_id } = req.body;
+        const result = await usersService.createUser(name, email, password, role_id);
         res.status(201).json(result);
     } catch (error) {
         next(error);
     }
 };
-const remove = async (req, res, next) => {
+
+const update = async (req, res, next) => {
     try {
-        await usersService.deleteUser(req.params.id);
-        res.status(200).json({ message: 'Usuario eliminado' });
+        const { name, email, role_id } = req.body;
+        const result = await usersService.updateUser(req.params.id, name, email, role_id);
+        res.status(200).json(result);
     } catch (error) {
         next(error);
     }
 };
-module.exports = { getAll, create, remove };
+
+const remove = async (req, res, next) => {
+    try {
+        const result = await usersService.deleteUser(req.params.id);
+        res.status(200).json(result);
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = {
+    getAll,
+    create,
+    update,
+    remove
+};

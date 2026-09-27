@@ -17,6 +17,7 @@ import {
   searchClients,
   deleteClient
 } from '../../services/clientService';
+import { handleApiError } from '../../utils/errorHandler';
 
 export default function ClientsScreen({navigation}) {
   const [clients, setClients] = useState([]);
@@ -33,10 +34,7 @@ export default function ClientsScreen({navigation}) {
 
       setClients(data);
     } catch (error) {
-      Alert.alert(
-        'Error',
-        error.response?.data?.error || 'Error al cargar los clientes'
-      );
+      handleApiError(error, 'Error al Cargar Clientes', 'No se pudieron cargar los clientes del taller');
     } finally {
       setLoading(false);
     }
@@ -58,10 +56,7 @@ const handleSearch = async (text) => {
 
       setClients(data);
     } catch (error) {
-      Alert.alert(
-        'Error',
-        error.response?.data?.error || 'Error al buscar clientes'
-      );
+      handleApiError(error, 'Error al Buscar Clientes', 'Ocurrió un error al buscar clientes');
     } finally {
       setLoading(false);
     }
@@ -86,11 +81,7 @@ const handleSearch = async (text) => {
             await deleteClient(client.id);
             await loadClients();
           } catch (error) {
-            Alert.alert(
-              'Error',
-              error.response?.data?.error ||
-                'No se pudo eliminar el cliente'
-            );
+            handleApiError(error, 'Error al Eliminar', 'No se pudo eliminar el cliente');
           }
         },
       },

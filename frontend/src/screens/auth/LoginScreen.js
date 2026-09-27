@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import colors from '../../theme/colors';
+import { handleApiError } from '../../utils/errorHandler';
 
 export default function LoginScreen() {
   const { login } = useContext(AuthContext);
@@ -10,12 +11,15 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) return Alert.alert('Error', 'Por favor ingresa correo y contraseña');
+    if (!email.trim() || !password) {
+      return Alert.alert('Campos requeridos', 'Por favor ingresa tu correo electrónico y contraseña.');
+    }
+
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
     } catch (error) {
-      Alert.alert('Error de Autenticación', error.response?.data?.error || 'Credenciales inválidas');
+      handleApiError(error, 'Error de Inicio de Sesión', 'Credenciales incorrectas. Verifica tu correo y contraseña.');
     } finally {
       setLoading(false);
     }
@@ -24,6 +28,8 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Gestión de Taller</Text>
+      <Text style={styles.subtitle}>Inicia sesión con tu cuenta de usuario</Text>
+
       <TextInput 
         style={styles.input} 
         placeholder="Correo Electrónico" 
@@ -41,8 +47,9 @@ export default function LoginScreen() {
         onChangeText={setPassword} 
         secureTextEntry
       />
+
       {loading ? (
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 10 }} />
       ) : (
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Iniciar Sesión</Text>
@@ -60,11 +67,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background 
   },
   title: { 
-    fontSize: 26, 
+    fontSize: 28, 
     fontWeight: 'bold', 
-    marginBottom: 24, 
+    marginBottom: 6, 
     textAlign: 'center',
     color: colors.text 
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 26
   },
   input: { 
     borderWidth: 1, 
