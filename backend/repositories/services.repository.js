@@ -9,19 +9,45 @@ const motorcycleExists = async (motorcycleId) => {
     return rows.length > 0;
 };
 
-const getAll = async () => {
-    const [rows] = await pool.query(`
+const getAll = async (status) => {
+    let query = `
         SELECT
-            id,
-            motorcycle_id AS motorcycleId,
-            description,
-            cost,
-            status,
-            created_at AS createdAt,
-            updated_at AS updatedAt
-        FROM services
-        ORDER BY created_at DESC
-    `);
+            s.id,
+            s.motorcycle_id AS motorcycleId,
+            s.description,
+            s.cost,
+            s.status,
+            s.created_at AS createdAt,
+            s.updated_at AS updatedAt,
+
+            m.brand AS motorcycleBrand,
+            m.model AS motorcycleModel,
+            m.license_plate AS licensePlate,
+
+            c.name AS clientName
+
+        FROM services s
+
+        INNER JOIN motorcycles m
+            ON s.motorcycle_id = m.id
+
+        INNER JOIN clients c
+            ON m.client_id = c.id
+    `;
+
+    const params = [];
+
+    if (status === 'ACTIVE') {
+        query += ` WHERE s.status IN (?, ?)`;
+        params.push('PENDING', 'IN_PROGRESS');
+    } else if (status) {
+        query += ` WHERE s.status = ?`;
+        params.push(status);
+    }
+
+    query += ` ORDER BY s.created_at DESC`;
+
+    const [rows] = await pool.query(query, params);
 
     return rows;
 };
@@ -29,15 +55,31 @@ const getAll = async () => {
 const getById = async (id) => {
     const [rows] = await pool.query(`
         SELECT
-            id,
-            motorcycle_id AS motorcycleId,
-            description,
-            cost,
-            status,
-            created_at AS createdAt,
-            updated_at AS updatedAt
-        FROM services
-        WHERE id = ?
+            s.id,
+            s.motorcycle_id AS motorcycleId,
+            s.description,
+            s.cost,
+            s.status,
+            s.created_at AS createdAt,
+            s.updated_at AS updatedAt,
+
+            m.brand AS motorcycleBrand,
+            m.model AS motorcycleModel,
+            m.year AS motorcycleYear,
+            m.license_plate AS licensePlate,
+
+            c.id AS clientId,
+            c.name AS clientName,
+            c.phone AS clientPhone,
+            c.email AS clientEmail
+
+        FROM services s
+        INNER JOIN motorcycles m
+            ON s.motorcycle_id = m.id
+        INNER JOIN clients c
+            ON m.client_id = c.id
+
+        WHERE s.id = ?
     `, [id]);
 
     return rows[0];

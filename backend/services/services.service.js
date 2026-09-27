@@ -1,9 +1,22 @@
 const servicesRepository = require('../repositories/services.repository');
 
-const getAllServices = async () => {
-    return await servicesRepository.getAll();
-};
+const getAllServices = async (status) => {
+    const validStatuses = [ 'ACTIVE', 'PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED' ];
+        
+    let normalizedStatus = null;
 
+    if (status) {
+        normalizedStatus = status.trim().toUpperCase();
+
+        if (!validStatuses.includes(normalizedStatus)) {
+            const error = new Error('Estado no válido');
+            error.status = 400;
+            throw error;
+        }
+    }
+
+    return await servicesRepository.getAll(normalizedStatus);
+};
 const getServiceById = async (id) => {
     const service = await servicesRepository.getById(id);
 

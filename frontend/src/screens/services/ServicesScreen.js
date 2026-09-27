@@ -17,24 +17,24 @@ import { getAllServices } from '../../services/serviceOrderService';
 
 export default function ServicesScreen({ navigation }) {
   const [services, setServices] = useState([]);
-  const [filter, setFilter] = useState('ALL');
+  const [filter, setFilter] = useState('ACTIVE');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadServices = useCallback(async () => {
-    try {
-      const data = await getAllServices();
-      setServices(data);
-    } catch (error) {
-      Alert.alert(
-        'Error',
-        error.response?.data?.message || 'No se pudieron cargar las órdenes'
-      );
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+  try {
+    const data = await getAllServices(filter);
+    setServices(data);
+  } catch (error) {
+    Alert.alert(
+      'Error',
+      error.response?.data?.message || 'No se pudieron cargar las órdenes'
+    );
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+}, [filter]);
 
   // Actualiza las órdenes cada vez que se vuelve a esta pantalla
   useFocusEffect(
@@ -48,10 +48,7 @@ export default function ServicesScreen({ navigation }) {
     loadServices();
   };
 
-  const filteredServices =
-    filter === 'ALL'
-      ? services
-      : services.filter((service) => service.status === filter);
+  
 
   const getStatusText = (status) => {
     switch (status) {
@@ -72,38 +69,69 @@ export default function ServicesScreen({ navigation }) {
     }
   };
 
-  const renderService = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() =>
-        navigation.navigate('ServiceDetail', {
-          serviceId: item.id,
-        })
-      }
-    >
-      <View style={styles.cardHeader}>
-        <Text style={styles.serviceId}>
-          Orden #{item.id}
-        </Text>
+  const getStatusStyle = (status) => {
+  switch (status) {
+    case 'IN_PROGRESS':
+      return styles.statusProgress;
 
-        <Text style={styles.status}>
+    case 'COMPLETED':
+      return styles.statusCompleted;
+
+    case 'CANCELLED':
+      return styles.statusCancelled;
+
+    default:
+      return styles.statusPending;
+  }
+};
+
+  const renderService = ({ item }) => (
+  <TouchableOpacity
+    style={styles.card}
+    onPress={() =>
+      navigation.navigate('ServiceDetail', {
+        serviceId: item.id,
+      })
+    }
+  >
+    <View style={styles.cardHeader}>
+      <Text style={styles.serviceId}>
+        Orden #{item.id}
+      </Text>
+
+      <View
+        style={[
+          styles.statusBadge,
+          getStatusStyle(item.status),
+        ]}
+      >
+        <Text style={styles.statusText}>
           {getStatusText(item.status)}
         </Text>
       </View>
+    </View>
 
-      <Text style={styles.description}>
-        {item.description}
-      </Text>
+    <Text style={styles.motorcycleName}>
+      {item.motorcycleBrand} {item.motorcycleModel}
+    </Text>
 
-      <Text style={styles.motorcycle}>
-        Motocicleta #{item.motorcycleId}
-      </Text>
+    <Text style={styles.secondaryInfo}>
+      Placa: {item.licensePlate || 'Sin placa'}
+    </Text>
 
-      <Text style={styles.cost}>
-        Costo: ${Number(item.cost).toFixed(2)}
-      </Text>
-    </TouchableOpacity>
-  );
+    <Text style={styles.secondaryInfo}>
+      Cliente: {item.clientName}
+    </Text>
+
+    <Text style={styles.description}>
+      {item.description}
+    </Text>
+
+    <Text style={styles.cost}>
+      Costo: ${Number(item.cost).toFixed(2)}
+    </Text>
+  </TouchableOpacity>
+);
 
   if (loading) {
     return (
@@ -143,17 +171,17 @@ export default function ServicesScreen({ navigation }) {
         <TouchableOpacity
           style={[
             styles.filterButton,
-            filter === 'ALL' && styles.filterButtonActive,
+            filter === 'ACTIVE' && styles.filterButtonActive,
           ]}
-          onPress={() => setFilter('ALL')}
+          onPress={() => setFilter('ACTIVE')}
         >
           <Text
             style={[
               styles.filterText,
-              filter === 'ALL' && styles.filterTextActive,
+              filter === 'ACTIVE' && styles.filterTextActive,
             ]}
           >
-            Todas
+            Activas
           </Text>
         </TouchableOpacity>
 
@@ -229,7 +257,7 @@ export default function ServicesScreen({ navigation }) {
 
       {/* Lista de órdenes */}
       <FlatList
-        data={filteredServices}
+        data={services}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderService}
         showsVerticalScrollIndicator={false}
@@ -344,11 +372,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  status: {
-    color: colors.textSecondary,
-    fontWeight: 'bold',
-  },
-
   description: {
     color: colors.text,
     fontSize: 15,
@@ -370,4 +393,49 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 40,
   },
+  statusBadge: {
+  borderWidth: 1,
+  borderRadius: 16,
+  paddingVertical: 4,
+  paddingHorizontal: 10,
+},
+
+statusPending: {
+  backgroundColor: colors.surface,
+  borderColor: colors.border,
+},
+
+statusProgress: {
+  backgroundColor: colors.primary,
+  borderColor: colors.primary,
+},
+
+statusCompleted: {
+  backgroundColor: colors.success,
+  borderColor: colors.success,
+},
+
+statusCancelled: {
+  backgroundColor: colors.danger,
+  borderColor: colors.danger,
+},
+
+statusText: {
+  color: colors.text,
+  fontSize: 12,
+  fontWeight: 'bold',
+},
+
+motorcycleName: {
+  color: colors.text,
+  fontSize: 16,
+  fontWeight: 'bold',
+  marginBottom: 4,
+},
+
+secondaryInfo: {
+  color: colors.textSecondary,
+  fontSize: 13,
+  marginBottom: 3,
+},
 });

@@ -1,7 +1,10 @@
 import axiosClient from '../api/axiosClient';
 
-const getAllServices = async () => {
-  const response = await axiosClient.get('/services');
+const getAllServices = async (status = 'ACTIVE') => {
+  const response = await axiosClient.get('/services', {
+    params: { status },
+  });
+
   return response.data;
 };
 

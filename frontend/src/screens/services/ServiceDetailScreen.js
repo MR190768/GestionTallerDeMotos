@@ -50,17 +50,17 @@ export default function ServiceDetailScreen({ route }) {
   }, [serviceId]);
 
   const handleSave = async () => {
+    if (!description.trim()) {
+      Alert.alert('Aviso', 'La descripción es obligatoria');
+      return;
+    }
+
+    if (!cost || Number(cost) < 0) {
+      Alert.alert('Aviso', 'Ingrese un costo válido');
+      return;
+    }
+
     try {
-      if (!description.trim()) {
-        Alert.alert('Aviso', 'La descripción es obligatoria');
-        return;
-      }
-
-      if (!cost || Number(cost) < 0) {
-        Alert.alert('Aviso', 'Ingrese un costo válido');
-        return;
-      }
-
       const updatedService = await updateService(service.id, {
         motorcycleId: service.motorcycleId,
         description: description.trim(),
@@ -70,11 +70,15 @@ export default function ServiceDetailScreen({ route }) {
       setService(updatedService);
       setEditing(false);
 
-      Alert.alert('Éxito', 'Servicio actualizado correctamente');
+      Alert.alert(
+        'Éxito',
+        'Servicio actualizado correctamente'
+      );
     } catch (error) {
       Alert.alert(
         'Error',
-        error.response?.data?.message || 'No se pudo actualizar el servicio'
+        error.response?.data?.message ||
+          'No se pudo actualizar el servicio'
       );
     }
   };
@@ -95,7 +99,8 @@ export default function ServiceDetailScreen({ route }) {
     } catch (error) {
       Alert.alert(
         'Error',
-        error.response?.data?.message || 'No se pudo cambiar el estado'
+        error.response?.data?.message ||
+          'No se pudo cambiar el estado'
       );
     }
   };
@@ -117,6 +122,30 @@ export default function ServiceDetailScreen({ route }) {
       default:
         return status;
     }
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case 'IN_PROGRESS':
+        return styles.statusProgress;
+
+      case 'COMPLETED':
+        return styles.statusCompleted;
+
+      case 'CANCELLED':
+        return styles.statusCancelled;
+
+      default:
+        return styles.statusPending;
+    }
+  };
+
+  const formatDate = (date) => {
+    if (!date) {
+      return 'Sin fecha';
+    }
+
+    return new Date(date).toLocaleString('es-SV');
   };
 
   if (loading) {
@@ -141,47 +170,116 @@ export default function ServiceDetailScreen({ route }) {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>
-        Orden #{service.id}
-      </Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+    >
+      {/* Encabezado */}
+
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={styles.title}>
+            Orden #{service.id}
+          </Text>
+
+          <Text style={styles.date}>
+            {formatDate(service.createdAt)}
+          </Text>
+        </View>
+
+        <View
+          style={[
+            styles.statusBadge,
+            getStatusStyle(service.status),
+          ]}
+        >
+          <Text style={styles.statusText}>
+            {getStatusText(service.status)}
+          </Text>
+        </View>
+      </View>
+
+      {/* Motocicleta */}
 
       <View style={styles.card}>
-        <Text style={styles.label}>
+        <Text style={styles.sectionTitle}>
           Motocicleta
         </Text>
 
-        <Text style={styles.value}>
-          #{service.motorcycleId}
+        <Text style={styles.mainValue}>
+          {service.motorcycleBrand} {service.motorcycleModel}
         </Text>
 
-        <Text style={styles.label}>
-          Estado
+        <View style={styles.detailRow}>
+          <Text style={styles.label}>Placa</Text>
+
+          <Text style={styles.value}>
+            {service.licensePlate || 'Sin placa'}
+          </Text>
+        </View>
+
+        <View style={styles.detailRow}>
+          <Text style={styles.label}>Año</Text>
+
+          <Text style={styles.value}>
+            {service.motorcycleYear || 'No registrado'}
+          </Text>
+        </View>
+      </View>
+
+      {/* Cliente */}
+
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>
+          Cliente
         </Text>
 
-        <Text style={styles.value}>
-          {getStatusText(service.status)}
+        <Text style={styles.mainValue}>
+          {service.clientName}
         </Text>
 
-        <Text style={styles.label}>
-          Descripción
+        <View style={styles.detailRow}>
+          <Text style={styles.label}>Teléfono</Text>
+
+          <Text style={styles.value}>
+            {service.clientPhone || 'No registrado'}
+          </Text>
+        </View>
+
+        <View style={styles.detailRow}>
+          <Text style={styles.label}>Correo</Text>
+
+          <Text style={styles.value}>
+            {service.clientEmail || 'No registrado'}
+          </Text>
+        </View>
+      </View>
+
+      {/* Servicio */}
+
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>
+          Trabajo a realizar
         </Text>
 
         {editing ? (
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              styles.descriptionInput,
+            ]}
             value={description}
             onChangeText={setDescription}
             multiline
           />
         ) : (
-          <Text style={styles.value}>
+          <Text style={styles.description}>
             {service.description}
           </Text>
         )}
 
-        <Text style={styles.label}>
-          Costo
+        <Text style={styles.costLabel}>
+          Costo estimado
         </Text>
 
         {editing ? (
@@ -198,13 +296,15 @@ export default function ServiceDetailScreen({ route }) {
         )}
       </View>
 
+      {/* Edición */}
+
       {editing ? (
         <>
           <TouchableOpacity
             style={styles.primaryButton}
             onPress={handleSave}
           >
-            <Text style={styles.buttonText}>
+            <Text style={styles.primaryButtonText}>
               Guardar cambios
             </Text>
           </TouchableOpacity>
@@ -223,15 +323,19 @@ export default function ServiceDetailScreen({ route }) {
           </TouchableOpacity>
         </>
       ) : (
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => setEditing(true)}
-        >
-          <Text style={styles.buttonText}>
-            Editar servicio
-          </Text>
-        </TouchableOpacity>
+        service.status !== 'CANCELLED' && (
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => setEditing(true)}
+          >
+            <Text style={styles.secondaryButtonText}>
+              Editar servicio
+            </Text>
+          </TouchableOpacity>
+        )
       )}
+
+      {/* Acciones según estado */}
 
       {service.status === 'PENDING' && (
         <TouchableOpacity
@@ -240,7 +344,7 @@ export default function ServiceDetailScreen({ route }) {
             handleStatusChange('IN_PROGRESS')
           }
         >
-          <Text style={styles.buttonText}>
+          <Text style={styles.primaryButtonText}>
             Iniciar trabajo
           </Text>
         </TouchableOpacity>
@@ -253,10 +357,34 @@ export default function ServiceDetailScreen({ route }) {
             handleStatusChange('COMPLETED')
           }
         >
-          <Text style={styles.buttonText}>
+          <Text style={styles.primaryButtonText}>
             Finalizar servicio
           </Text>
         </TouchableOpacity>
+      )}
+
+      {service.status === 'COMPLETED' && (
+        <>
+          <View style={styles.completedBox}>
+            <Text style={styles.completedText}>
+              Servicio finalizado
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.paymentButton}
+            onPress={() =>
+              Alert.alert(
+                'Registrar pago',
+                'Esta opción será conectada al módulo de pagos.'
+              )
+            }
+          >
+            <Text style={styles.paymentButtonText}>
+              Registrar pago
+            </Text>
+          </TouchableOpacity>
+        </>
       )}
 
       {service.status !== 'COMPLETED' &&
@@ -272,6 +400,14 @@ export default function ServiceDetailScreen({ route }) {
             </Text>
           </TouchableOpacity>
         )}
+
+      {service.status === 'CANCELLED' && (
+        <View style={styles.cancelledBox}>
+          <Text style={styles.cancelledText}>
+            Servicio cancelado
+          </Text>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -280,7 +416,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+
+  content: {
     padding: 16,
+    paddingBottom: 30,
   },
 
   loadingContainer: {
@@ -290,47 +430,130 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
 
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.text,
-    marginBottom: 16,
+  },
+
+  date: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    marginTop: 4,
+  },
+
+  statusBadge: {
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+
+  statusPending: {
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  statusProgress: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+  },
+
+  statusCompleted: {
+    borderColor: colors.success,
+    backgroundColor: colors.success,
+  },
+
+  statusCancelled: {
+    borderColor: colors.danger,
+    backgroundColor: colors.danger,
+  },
+
+  statusText: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 
   card: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 14,
+  },
+
+  sectionTitle: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+
+  mainValue: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
 
   label: {
     color: colors.textSecondary,
-    fontSize: 13,
-    marginTop: 10,
-    marginBottom: 4,
+    fontSize: 14,
   },
 
   value: {
     color: colors.text,
+    fontSize: 14,
+    maxWidth: '65%',
+    textAlign: 'right',
+  },
+
+  description: {
+    color: colors.text,
     fontSize: 16,
+    marginBottom: 18,
+  },
+
+  costLabel: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    marginBottom: 4,
   },
 
   cost: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
   },
 
   input: {
     backgroundColor: colors.surface,
-    color: colors.text,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
     padding: 10,
+    color: colors.text,
+    marginBottom: 12,
+  },
+
+  descriptionInput: {
+    minHeight: 90,
+    textAlignVertical: 'top',
   },
 
   primaryButton: {
@@ -341,7 +564,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  buttonText: {
+  primaryButtonText: {
     color: colors.textDark,
     fontWeight: 'bold',
     fontSize: 15,
@@ -350,6 +573,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: colors.surface,
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',
@@ -359,6 +583,7 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: colors.text,
     fontWeight: 'bold',
+    fontSize: 15,
   },
 
   dangerButton: {
@@ -366,11 +591,53 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 12,
   },
 
   dangerButtonText: {
     color: colors.textLight,
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+
+  completedBox: {
+    borderWidth: 1,
+    borderColor: colors.success,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+
+  completedText: {
+    color: colors.text,
+    fontWeight: 'bold',
+  },
+
+  paymentButton: {
+    backgroundColor: colors.headerBackground,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  paymentButtonText: {
+    color: colors.textLight,
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+
+  cancelledBox: {
+    borderWidth: 1,
+    borderColor: colors.danger,
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+  },
+
+  cancelledText: {
+    color: colors.danger,
     fontWeight: 'bold',
   },
 

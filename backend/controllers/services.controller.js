@@ -2,7 +2,9 @@ const servicesService = require('../services/services.service');
 
 const getAllServices = async (req, res, next) => {
     try {
-        const services = await servicesService.getAllServices();
+        const { status } = req.query;
+
+        const services = await servicesService.getAllServices(status);
 
         res.json(services);
     } catch (error) {
