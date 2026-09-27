@@ -20,6 +20,7 @@ export default function ClientsScreen({navigation}) {
   const [clients, setClients] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('todos');
 
   // --- Cargar Clientes ---
   const loadClients = async () => {
@@ -100,6 +101,23 @@ const handleSearch = async (text) => {
     loadClients();
   }, []);
 
+  // --- Logica de los filtros ---
+  const filteredClients = clients
+    .filter((client) => {
+        if (activeFilter === 'deuda') {
+            return Number(client.debt) > 0;
+        }
+
+        return true;
+    })
+    .sort((a, b) => {
+        if (activeFilter === 'frecuentes') {
+            return Number(b.serviceCount) - Number(a.serviceCount);
+        }
+
+        return a.name.localeCompare(b.name);
+    });
+
   return (
     <View style={styles.container}>
 
@@ -117,6 +135,28 @@ const handleSearch = async (text) => {
         </Text>
       </TouchableOpacity>
 
+      <View style={styles.filterContainer}>
+
+        <TouchableOpacity style={[styles.filterButton, activeFilter === 'todos' && styles.activeFilterButton]} onPress={() => setActiveFilter('todos')}>
+          <Text style={[styles.filterButtonText, activeFilter === 'todos' && styles.activeFilterText]}>
+            Todos
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.filterButton, activeFilter === 'deuda' && styles.activeFilterButton]} onPress={() => setActiveFilter('deuda')}>
+          <Text style={[styles.filterButtonText, activeFilter === 'deuda' && styles.activeFilterText]}>
+            Con deuda
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.filterButton, activeFilter === 'frecuentes' && styles.activeFilterButton]} onPress={() => setActiveFilter('frecuentes')}>
+          <Text style={[styles.filterButtonText, activeFilter === 'frecuentes' && styles.activeFilterText]}>
+            Frecuentes
+          </Text>
+        </TouchableOpacity>
+
+      </View>
+
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -125,7 +165,7 @@ const handleSearch = async (text) => {
         />
       ) : (
         <FlatList
-          data={clients}
+          data={filteredClients}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.clientCard} onPress = {() => navigation.navigate('ClientInformation', {clientId : item.id})}>
@@ -138,14 +178,12 @@ const handleSearch = async (text) => {
               )}
 
               <Text style={styles.clientInfo}>
-                Teléfono: {item.phone}
+                Servicios Activos: {item.serviceCount}
               </Text>
 
-              {item.address && (
-                <Text style={styles.clientInfo}>
-                  Dirección: {item.address}
-                </Text>
-              )}
+              <Text style={styles.clientInfo}>
+                Dinero de deuda: ${item.debt}
+              </Text>
 
               <TouchableOpacity style={styles.btnDelete} onPress={() => handleDeleteClient(item)}>
                 <Text style={styles.btnDeleteText}>
@@ -182,6 +220,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderRadius: 8,
+    marginBottom: 10,
     borderColor: colors.border
   },
   clientName: {
@@ -224,5 +263,29 @@ const styles = StyleSheet.create({
     color: colors.textDark,
     fontWeight: 'bold',
     fontSize: 15
+  },
+  filterContainer:{
+    alignItems:"center",
+    flexDirection: "row",
+    padding: 5,
+    marginBottom: 10
+  },
+  filterButton: {
+    borderWidth: 1,
+    marginRight: 15,
+    padding: 5,
+    borderRadius: 16,
+    borderColor: colors.border
+  },
+  activeFilterButton: {
+    backgroundColor:colors.primary,
+    marginRight: 15,
+    padding: 5,
+    borderRadius: 16,
+    borderColor: colors.border
+  },
+  activeFilterText: {
+    color: colors.textDark,
+    fontWeight: 'bold',
   }
 });

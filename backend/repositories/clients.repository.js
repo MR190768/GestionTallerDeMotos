@@ -3,15 +3,58 @@ const pool = require('../config/database');
 const getAll = async () => {
     const [rows] = await pool.query(`
         SELECT
-            id,
-            name,
-            email,
-            phone,
-            address,
-            created_at AS createdAt,
-            updated_at AS updatedAt
-        FROM clients
-        ORDER BY created_at DESC
+            c.id,
+            c.name,
+            c.email,
+            c.phone,
+            c.address,
+            c.created_at AS createdAt,
+            c.updated_at AS updatedAt,
+
+            COALESCE(service_counts.serviceCount, 0) AS serviceCount,
+
+            COALESCE(debt_balances.debt, 0) AS debt
+
+        FROM clients c
+
+        LEFT JOIN (
+            SELECT
+                m.client_id,
+                COUNT(s.id) AS serviceCount
+            FROM motorcycles m
+            LEFT JOIN services s
+                ON s.motorcycle_id = m.id
+            GROUP BY m.client_id
+        ) AS service_counts
+            ON service_counts.client_id = c.id
+
+        LEFT JOIN (
+            SELECT
+                client_id,
+                GREATEST(
+                    SUM(
+                        CASE
+                            WHEN transaction_type = 'DEBT'
+                            THEN amount
+                            ELSE 0
+                        END
+                    )
+                    -
+                    SUM(
+                        CASE
+                            WHEN transaction_type = 'PAYMENT'
+                            THEN amount
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ) AS debt
+            FROM debts_payments
+            GROUP BY client_id
+        ) AS debt_balances
+            ON debt_balances.client_id = c.id
+
+        ORDER BY c.created_at DESC
     `);
 
     return rows;
@@ -20,15 +63,58 @@ const getAll = async () => {
 const getById = async (id) => {
     const [rows] = await pool.query(`
         SELECT
-            id,
-            name,
-            email,
-            phone,
-            address,
-            created_at AS createdAt,
-            updated_at AS updatedAt
-        FROM clients
-        WHERE id = ?
+            c.id,
+            c.name,
+            c.email,
+            c.phone,
+            c.address,
+            c.created_at AS createdAt,
+            c.updated_at AS updatedAt,
+
+            COALESCE(service_counts.serviceCount, 0) AS serviceCount,
+
+            COALESCE(debt_balances.debt, 0) AS debt
+
+        FROM clients c
+
+        LEFT JOIN (
+            SELECT
+                m.client_id,
+                COUNT(s.id) AS serviceCount
+            FROM motorcycles m
+            LEFT JOIN services s
+                ON s.motorcycle_id = m.id
+            GROUP BY m.client_id
+        ) AS service_counts
+            ON service_counts.client_id = c.id
+
+        LEFT JOIN (
+            SELECT
+                client_id,
+                GREATEST(
+                    SUM(
+                        CASE
+                            WHEN transaction_type = 'DEBT'
+                            THEN amount
+                            ELSE 0
+                        END
+                    )
+                    -
+                    SUM(
+                        CASE
+                            WHEN transaction_type = 'PAYMENT'
+                            THEN amount
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ) AS debt
+            FROM debts_payments
+            GROUP BY client_id
+        ) AS debt_balances
+            ON debt_balances.client_id = c.id
+
+        WHERE c.id = ?
     `, [id]);
 
     return rows[0];
@@ -37,20 +123,64 @@ const getById = async (id) => {
 const search = async (query) => {
     const [rows] = await pool.query(`
         SELECT
-            id,
-            name,
-            email,
-            phone,
-            address,
-            created_at AS createdAt,
-            updated_at AS updatedAt
-        FROM clients
+            c.id,
+            c.name,
+            c.email,
+            c.phone,
+            c.address,
+            c.created_at AS createdAt,
+            c.updated_at AS updatedAt,
+
+            COALESCE(service_counts.serviceCount, 0) AS serviceCount,
+
+            COALESCE(debt_balances.debt, 0) AS debt
+
+        FROM clients c
+
+        LEFT JOIN (
+            SELECT
+                m.client_id,
+                COUNT(s.id) AS serviceCount
+            FROM motorcycles m
+            LEFT JOIN services s
+                ON s.motorcycle_id = m.id
+            GROUP BY m.client_id
+        ) AS service_counts
+            ON service_counts.client_id = c.id
+
+        LEFT JOIN (
+            SELECT
+                client_id,
+                GREATEST(
+                    SUM(
+                        CASE
+                            WHEN transaction_type = 'DEBT'
+                            THEN amount
+                            ELSE 0
+                        END
+                    )
+                    -
+                    SUM(
+                        CASE
+                            WHEN transaction_type = 'PAYMENT'
+                            THEN amount
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ) AS debt
+            FROM debts_payments
+            GROUP BY client_id
+        ) AS debt_balances
+            ON debt_balances.client_id = c.id
+
         WHERE
-            name LIKE ?
-            OR email LIKE ?
-            OR phone LIKE ?
-            OR address LIKE ?
-        ORDER BY name ASC
+            c.name LIKE ?
+            OR c.email LIKE ?
+            OR c.phone LIKE ?
+            OR c.address LIKE ?
+
+        ORDER BY c.name ASC
     `, [
         `%${query}%`,
         `%${query}%`,

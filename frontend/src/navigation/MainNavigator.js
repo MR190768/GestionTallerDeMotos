@@ -26,8 +26,8 @@ export default function MainNavigator() {
       {userInfo?.role === 'admin' ? (<>
         <Stack.Screen name="AdminDashboard" component={UserManagementScreen} options={{ title: 'Panel de Administración' }} />
         <Stack.Screen name="Client" component={ClientsScreen} options={{ title: 'Clientes' }} />
-        <Stack.Screen name="ClientInformation" component={ClientInformationScreen} options={{ title: 'Agregar nuevo cliente' }} />
-        <Stack.Screen name="AddClient" component={AddClientScreen} options={{ title: 'Informacion del Cliente' }} />
+        <Stack.Screen name="ClientInformation" component={ClientInformationScreen} options={{ title: 'Informacion del cliente' }} />
+        <Stack.Screen name="AddClient" component={AddClientScreen} options={{ title: 'Agregar Cliente' }} />
         </>
         
       ) : (<>
