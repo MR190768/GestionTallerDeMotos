@@ -17,6 +17,7 @@ import {
   updateService,
   updateServiceStatus,
 } from '../../services/serviceOrderService';
+import { handleApiError } from '../../utils/errorHandler';
 
 export default function ServiceDetailScreen({ route }) {
   const { serviceId } = route.params;
@@ -36,10 +37,7 @@ export default function ServiceDetailScreen({ route }) {
       setDescription(data.description);
       setCost(String(data.cost));
     } catch (error) {
-      Alert.alert(
-        'Error',
-        error.response?.data?.message || 'No se pudo cargar la orden'
-      );
+      handleApiError(error, 'Error al Cargar Orden', 'No se pudo cargar la orden');
     } finally {
       setLoading(false);
     }
@@ -75,11 +73,7 @@ export default function ServiceDetailScreen({ route }) {
         'Servicio actualizado correctamente'
       );
     } catch (error) {
-      Alert.alert(
-        'Error',
-        error.response?.data?.message ||
-          'No se pudo actualizar el servicio'
-      );
+      handleApiError(error, 'Error al Actualizar', 'No se pudo actualizar el servicio');
     }
   };
 
@@ -97,11 +91,7 @@ export default function ServiceDetailScreen({ route }) {
         'Estado actualizado correctamente'
       );
     } catch (error) {
-      Alert.alert(
-        'Error',
-        error.response?.data?.message ||
-          'No se pudo cambiar el estado'
-      );
+      handleApiError(error, 'Error de Estado', 'No se pudo cambiar el estado');
     }
   };
 

@@ -71,7 +71,8 @@ export default function UserManagementScreen({ navigation }) {
     { title: 'Motos', screen: 'Motorcycles', tag: '🏍️ Motos' },
     { title: 'Servicios', screen: 'Services', tag: '🔧 Servicios' },
     { title: 'Repuestos', screen: 'Parts', tag: '⚙️ Repuestos' },
-    { title: 'Finanzas', screen: 'Debts', tag: '💰 Finanzas' }
+    { title: 'Finanzas', screen: 'Debts', tag: '💰 Finanzas' },
+    { title: 'Panel Operativo', screen: 'UserDashboard', tag: '📋 Panel Operativo' }
   ];
 
   return (

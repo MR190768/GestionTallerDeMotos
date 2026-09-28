@@ -1,14 +1,12 @@
-
 const express = require('express');
 const router = express.Router();
 
 const servicesController = require('../controllers/services.controller');
 const authMiddleware = require('../middlewares/authMiddleware');
-const roleMiddleware = require('../middlewares/roleMiddleware');
+const permissionMiddleware = require('../middlewares/permissionMiddleware');
 
-// Solo usuarios autenticados con rol admin o mecanico
-router.use(authMiddleware,roleMiddleware(['admin', 'mecanico'])
-);
+// Solo usuarios autenticados con permiso para órdenes de servicio (RBAC)
+router.use(authMiddleware, permissionMiddleware('manage_services'));
 
 // Listar órdenes de servicio
 router.get('/', servicesController.getAllServices);

@@ -14,6 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import colors from '../../theme/colors';
 import { getAllServices } from '../../services/serviceOrderService';
+import { handleApiError } from '../../utils/errorHandler';
 
 export default function ServicesScreen({ navigation }) {
   const [services, setServices] = useState([]);
@@ -22,19 +23,16 @@ export default function ServicesScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadServices = useCallback(async () => {
-  try {
-    const data = await getAllServices(filter);
-    setServices(data);
-  } catch (error) {
-    Alert.alert(
-      'Error',
-      error.response?.data?.message || 'No se pudieron cargar las órdenes'
-    );
-  } finally {
-    setLoading(false);
-    setRefreshing(false);
-  }
-}, [filter]);
+    try {
+      const data = await getAllServices(filter);
+      setServices(data);
+    } catch (error) {
+      handleApiError(error, 'Error al Cargar Órdenes', 'No se pudieron cargar las órdenes de servicio');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [filter]);
 
   // Actualiza las órdenes cada vez que se vuelve a esta pantalla
   useFocusEffect(

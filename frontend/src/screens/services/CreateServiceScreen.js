@@ -15,6 +15,7 @@ import {
 import colors from '../../theme/colors';
 import { getAllClients } from '../../services/clientService';
 import { createService } from '../../services/serviceOrderService';
+import { handleApiError } from '../../utils/errorHandler';
 
 export default function CreateServiceScreen({ navigation }) {
 
@@ -44,11 +45,7 @@ export default function CreateServiceScreen({ navigation }) {
       setClients(data);
 
     } catch (error) {
-      Alert.alert(
-        'Error',
-        error.response?.data?.error ||
-        'No se pudieron cargar los clientes'
-      );
+      handleApiError(error, 'Error al Cargar Clientes', 'No se pudieron cargar los clientes');
     } finally {
       setLoadingClients(false);
     }
@@ -134,17 +131,7 @@ export default function CreateServiceScreen({ navigation }) {
       );
 
     } catch (error) {
-
-      const message =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
-        'No se pudo crear la orden de servicio';
-
-      Alert.alert(
-        'Error',
-        message
-      );
-
+      handleApiError(error, 'Error al Registrar', 'No se pudo crear la orden de servicio');
     } finally {
       setSaving(false);
     }

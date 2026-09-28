@@ -1,9 +1,9 @@
 const { Router } = require('express');
 const authMiddleware = require('../middlewares/authMiddleware');
-const roleMiddleware = require('../middlewares/roleMiddleware');
+const permissionMiddleware = require('../middlewares/permissionMiddleware');
 const router = Router();
 
 router.use(authMiddleware);
-router.use(roleMiddleware(['admin', 'mecanico']));
+router.use(permissionMiddleware('manage_motorcycles'));
 
 module.exports = router;

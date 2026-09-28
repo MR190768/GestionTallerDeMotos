@@ -1,13 +1,13 @@
 const { Router } = require('express');
 const clientsController = require('../controllers/clients.controller');
 const authMiddleware = require('../middlewares/authMiddleware');
-const roleMiddleware = require('../middlewares/roleMiddleware');
+const permissionMiddleware = require('../middlewares/permissionMiddleware');
 const router = Router();
 
 router.use(authMiddleware);
 
-//Usuarios admin o mecanicos requeridos para observar y agregar clientes
-router.use(roleMiddleware(['admin', 'mecanico']));
+// Requiere permiso para gestionar clientes (RBAC)
+router.use(permissionMiddleware('manage_clients'));
 
 // Listar clientes
 router.get('/', clientsController.getAllClients);
