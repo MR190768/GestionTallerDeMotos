@@ -50,6 +50,7 @@ const colors = {
   danger: palette.coralRed,           // Acciones de peligro, cancelar, logout, deudas (#D14B4B)
   error: palette.coralRed,            // Mensajes de error (#D14B4B)
   success: '#1B9A68',                 // Texto de éxito legible sobre blanco
+  warning: '#C7710F',                 // Advertencia (ej. stock bajo en Inventario), legible sobre blanco
   successHighlight: palette.mintGreen,// Destacados de éxito / botones (#4BD19F)
 
   // Tipografía (adaptada para lectura óptima sobre fondo blanco)

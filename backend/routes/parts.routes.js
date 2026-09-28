@@ -1,9 +1,30 @@
 const { Router } = require('express');
+const partsController = require('../controllers/parts.controller');
 const authMiddleware = require('../middlewares/authMiddleware');
-const roleMiddleware = require('../middlewares/roleMiddleware');
+const permissionMiddleware = require('../middlewares/permissionMiddleware');
 const router = Router();
 
 router.use(authMiddleware);
-router.use(roleMiddleware(['admin', 'mecanico']));
+
+// Requiere el permiso 'manage_parts' (el Administrador siempre tiene acceso)
+router.use(permissionMiddleware('manage_parts'));
+
+// Listar catálogo (admite ?busqueda= para buscar por código o nombre)
+router.get('/', partsController.listarRepuestos);
+
+// Registrar entrada o salida de stock
+router.post('/movement', partsController.registrarMovimiento);
+
+// Detalle de un repuesto
+router.get('/:id', partsController.obtenerRepuestoPorId);
+
+// Crear repuesto
+router.post('/', partsController.crearRepuesto);
+
+// Actualizar precio/stock y demás datos
+router.put('/:id', partsController.actualizarRepuesto);
+
+// Eliminar repuesto
+router.delete('/:id', partsController.eliminarRepuesto);
 
 module.exports = router;
