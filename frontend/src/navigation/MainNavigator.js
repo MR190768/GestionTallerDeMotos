@@ -16,6 +16,8 @@ import ClientsScreen from '../screens/clients/ClientsScreen';
 import AddClientScreen from '../screens/clients/AddClientScreen';
 import ClientInformationScreen from '../screens/clients/ClientInformationScreen';
 import MotorcyclesScreen from '../screens/motorcycles/MotorcyclesScreen';
+import MotorcycleDetailScreen from '../screens/motorcycles/MotorcycleDetailScreen';
+import MotorcycleFormScreen from '../screens/motorcycles/MotorcycleFormScreen';
 import ServicesScreen from '../screens/services/ServicesScreen';
 import ServiceDetailScreen from '../screens/services/ServiceDetailScreen';
 import CreateServiceScreen from '../screens/services/CreateServiceScreen';
@@ -87,6 +89,18 @@ export default function MainNavigator() {
         name="Motorcycles"
         component={MotorcyclesScreen}
         options={{ title: 'Motocicletas' }}
+      />
+
+      <Stack.Screen
+        name="MotorcycleDetail"
+        component={MotorcycleDetailScreen}
+        options={{ title: 'Ficha de Motocicleta' }}
+      />
+
+      <Stack.Screen
+        name="MotorcycleForm"
+        component={MotorcycleFormScreen}
+        options={{ title: 'Gestionar Motocicleta' }}
       />
 
       {/* Módulo de Servicios */}

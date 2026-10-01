@@ -17,12 +17,14 @@ import { getAllClients } from '../../services/clientService';
 import { createService } from '../../services/serviceOrderService';
 import { handleApiError } from '../../utils/errorHandler';
 
-export default function CreateServiceScreen({ navigation }) {
+export default function CreateServiceScreen({ route, navigation }) {
+  const preselectedClientId = route?.params?.preselectedClientId;
+  const preselectedMotorcycleId = route?.params?.preselectedMotorcycleId;
 
   const [clients, setClients] = useState([]);
 
   const [selectedClient, setSelectedClient] = useState(null);
-  const [motorcycleId, setMotorcycleId] = useState('');
+  const [motorcycleId, setMotorcycleId] = useState(preselectedMotorcycleId ? String(preselectedMotorcycleId) : '');
   const [description, setDescription] = useState('');
   const [cost, setCost] = useState('');
 
@@ -33,7 +35,10 @@ export default function CreateServiceScreen({ navigation }) {
 
   useEffect(() => {
     loadClients();
-  }, []);
+    if (preselectedMotorcycleId) {
+      setMotorcycleId(String(preselectedMotorcycleId));
+    }
+  }, [preselectedMotorcycleId]);
 
   // Cargar clientes desde el backend
   const loadClients = async () => {
@@ -43,6 +48,11 @@ export default function CreateServiceScreen({ navigation }) {
       const data = await getAllClients();
 
       setClients(data);
+
+      if (preselectedClientId && !selectedClient) {
+        const found = data.find((c) => c.id === preselectedClientId);
+        if (found) setSelectedClient(found);
+      }
 
     } catch (error) {
       handleApiError(error, 'Error al Cargar Clientes', 'No se pudieron cargar los clientes');
