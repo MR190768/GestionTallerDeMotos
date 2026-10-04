@@ -27,7 +27,9 @@ import ModalRepuesto from '../../components/parts/ModalRepuesto';
 import {
   PackageIcon,
   ClipboardIcon,
-  PlusIcon
+  PlusIcon,
+  ArrowDownIcon,
+  ArrowUpIcon
 } from '../../components/common/AppIcons';
 
 // Milisegundos de espera tras la última tecla antes de consultar al servidor
@@ -385,7 +387,10 @@ export default function PartsScreen() {
           />
 
           {/* Sección inferior: registrar entrada o salida manual */}
-          <View style={styles.seccionMovimiento}>
+          <View style={[
+            styles.seccionMovimiento,
+            { paddingBottom: Math.max(insets.bottom, 32) + 20 }
+          ]}>
             <Text style={styles.tituloSeccion}>Ajuste manual de stock</Text>
             <Text style={styles.ayudaMovimiento}>
               {repuestoSeleccionado
@@ -394,12 +399,22 @@ export default function PartsScreen() {
             </Text>
 
             <View style={styles.botonesMovimiento}>
-              <TouchableOpacity style={styles.botonMovimiento} onPress={() => abrirMovimiento('ENTRY')}>
-                <Text style={styles.textoBotonMovimiento}>↓ Entrada</Text>
+              <TouchableOpacity
+                style={[styles.botonMovimiento, styles.botonEntrada]}
+                onPress={() => abrirMovimiento('ENTRY')}
+                activeOpacity={0.7}
+              >
+                <ArrowDownIcon size={16} color={colors.primary} />
+                <Text style={styles.textoBotonMovimiento}>Entrada</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.botonMovimiento} onPress={() => abrirMovimiento('EXIT')}>
-                <Text style={styles.textoBotonMovimiento}>↑ Salida</Text>
+              <TouchableOpacity
+                style={[styles.botonMovimiento, styles.botonSalida]}
+                onPress={() => abrirMovimiento('EXIT')}
+                activeOpacity={0.7}
+              >
+                <ArrowUpIcon size={16} color={colors.danger} />
+                <Text style={styles.textoBotonMovimiento}>Salida</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -410,7 +425,7 @@ export default function PartsScreen() {
       {/* VISTA 2: HISTORIAL DE REPUESTOS USADOS EN SERVICIOS                  */}
       {/* ==================================================================== */}
       {tabActiva === 'history' && (
-        <View style={styles.historyContainer}>
+        <View style={[styles.historyContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <TextInput
             style={styles.buscador}
             placeholder="Buscar por repuesto, placa o cliente..."
@@ -696,31 +711,44 @@ const styles = StyleSheet.create({
   seccionMovimiento: {
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingTop: 12,
+    paddingTop: 14,
     marginTop: 8,
+    backgroundColor: colors.background,
   },
   ayudaMovimiento: {
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   botonesMovimiento: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
   },
   botonMovimiento: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    padding: 10,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1.5,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     backgroundColor: colors.surface,
+  },
+  botonEntrada: {
+    borderColor: colors.primary,
+    backgroundColor: '#F3FAF6',
+  },
+  botonSalida: {
+    borderColor: colors.danger,
+    backgroundColor: '#FDF4F4',
   },
   textoBotonMovimiento: {
     color: colors.text,
     fontWeight: 'bold',
+    fontSize: 14,
   },
   // Tarjetas de historial en servicios
   historyCard: {
