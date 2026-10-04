@@ -16,8 +16,11 @@ import {
   getServiceById,
   updateService,
   updateServiceStatus,
+  addPartToService,
+  removePartFromService,
 } from '../../services/serviceOrderService';
 import { handleApiError } from '../../utils/errorHandler';
+import ModalAsignarRepuesto from '../../components/services/ModalAsignarRepuesto';
 
 export default function ServiceDetailScreen({ route }) {
   const { serviceId } = route.params;
@@ -25,6 +28,7 @@ export default function ServiceDetailScreen({ route }) {
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [modalRepuestoVisible, setModalRepuestoVisible] = useState(false);
 
   const [description, setDescription] = useState('');
   const [cost, setCost] = useState('');
@@ -46,6 +50,43 @@ export default function ServiceDetailScreen({ route }) {
   useEffect(() => {
     loadService();
   }, [serviceId]);
+
+  const handleAddPart = async (partId, quantity) => {
+    try {
+      const updated = await addPartToService(service.id, { partId, quantity });
+      setService(updated);
+      setModalRepuestoVisible(false);
+      Alert.alert('Éxito', 'Repuesto agregado correctamente al servicio');
+      return true;
+    } catch (error) {
+      handleApiError(error, 'Error al Asignar Repuesto', 'No se pudo agregar el repuesto al servicio');
+      return false;
+    }
+  };
+
+  const handleRemovePart = (partItem) => {
+    Alert.alert(
+      'Remover repuesto',
+      `¿Deseas remover "${partItem.partName}" (${partItem.quantity} uds) de la orden? El stock será reintegrado al inventario.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const updated = await removePartFromService(service.id, partItem.id);
+              setService(updated);
+              Alert.alert('Éxito', 'Repuesto removido y stock reintegrado correctamente');
+            } catch (error) {
+              handleApiError(error, 'Error al Remover Repuesto', 'No se pudo remover el repuesto');
+            }
+          },
+        },
+      ]
+    );
+  };
+
 
   const handleSave = async () => {
     if (!description.trim()) {
@@ -247,6 +288,7 @@ export default function ServiceDetailScreen({ route }) {
 
       {/* Servicio */}
 
+      {/* Trabajo a realizar */}
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>
           Trabajo a realizar
@@ -267,24 +309,102 @@ export default function ServiceDetailScreen({ route }) {
             {service.description}
           </Text>
         )}
+      </View>
 
-        <Text style={styles.costLabel}>
-          Costo estimado
-        </Text>
+      {/* Repuestos y Materiales Asignados */}
+      <View style={styles.card}>
+        <View style={styles.cardHeaderRow}>
+          <Text style={styles.sectionTitle}>
+            Repuestos y Materiales
+          </Text>
 
-        {editing ? (
-          <TextInput
-            style={styles.input}
-            value={cost}
-            onChangeText={setCost}
-            keyboardType="decimal-pad"
-          />
+          {service.status !== 'CANCELLED' && service.status !== 'COMPLETED' && (
+            <TouchableOpacity
+              style={styles.btnAddPart}
+              onPress={() => setModalRepuestoVisible(true)}
+            >
+              <Text style={styles.btnAddPartText}>+ Agregar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {service.parts && service.parts.length > 0 ? (
+          service.parts.map((item) => (
+            <View key={item.id} style={styles.partItemRow}>
+              <View style={styles.partItemDetails}>
+                <View style={styles.partCodeBadge}>
+                  <Text style={styles.partCodeText}>{item.partCode}</Text>
+                </View>
+                <Text style={styles.partNameText} numberOfLines={1}>
+                  {item.partName}
+                </Text>
+                <Text style={styles.partCalculusText}>
+                  {item.quantity} {item.quantity === 1 ? 'unidad' : 'unidades'} × ${Number(item.unitPrice).toFixed(2)}
+                </Text>
+              </View>
+
+              <View style={styles.partItemRight}>
+                <Text style={styles.partSubtotalText}>
+                  ${Number(item.subtotal).toFixed(2)}
+                </Text>
+
+                {service.status !== 'CANCELLED' && service.status !== 'COMPLETED' && (
+                  <TouchableOpacity
+                    style={styles.btnRemovePart}
+                    onPress={() => handleRemovePart(item)}
+                  >
+                    <Text style={styles.btnRemovePartText}>✕</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          ))
         ) : (
-          <Text style={styles.cost}>
-            ${Number(service.cost).toFixed(2)}
+          <Text style={styles.emptyPartsText}>
+            No se han asignado repuestos a esta orden.
           </Text>
         )}
       </View>
+
+      {/* Resumen Financiero de la Orden */}
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>
+          Resumen Financiero
+        </Text>
+
+        <View style={styles.financeRow}>
+          <Text style={styles.financeLabel}>Mano de obra (Base):</Text>
+          {editing ? (
+            <TextInput
+              style={[styles.input, styles.costInputEditing]}
+              value={cost}
+              onChangeText={setCost}
+              keyboardType="decimal-pad"
+            />
+          ) : (
+            <Text style={styles.financeValue}>
+              ${Number(service.laborCost ?? service.cost ?? 0).toFixed(2)}
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.financeRow}>
+          <Text style={styles.financeLabel}>Total en Repuestos:</Text>
+          <Text style={styles.financeValue}>
+            +${Number(service.partsCost ?? 0).toFixed(2)}
+          </Text>
+        </View>
+
+        <View style={styles.financeDivider} />
+
+        <View style={styles.financeTotalRow}>
+          <Text style={styles.financeTotalLabel}>TOTAL DE LA ORDEN:</Text>
+          <Text style={styles.financeTotalValue}>
+            ${Number(service.totalCost ?? service.cost ?? 0).toFixed(2)}
+          </Text>
+        </View>
+      </View>
+
 
       {/* Edición */}
 
@@ -398,6 +518,12 @@ export default function ServiceDetailScreen({ route }) {
           </Text>
         </View>
       )}
+
+      <ModalAsignarRepuesto
+        visible={modalRepuestoVisible}
+        onCerrar={() => setModalRepuestoVisible(false)}
+        onConfirmar={handleAddPart}
+      />
     </ScrollView>
   );
 }
@@ -634,4 +760,128 @@ const styles = StyleSheet.create({
   text: {
     color: colors.text,
   },
-});
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  btnAddPart: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  btnAddPartText: {
+    color: colors.charcoal,
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  partItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  partItemDetails: {
+    flex: 1,
+    marginRight: 10,
+  },
+  partCodeBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#EEF2F0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginBottom: 2,
+  },
+  partCodeText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: colors.textSecondary,
+  },
+  partNameText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  partCalculusText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  partItemRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  partSubtotalText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: colors.text,
+  },
+  btnRemovePart: {
+    backgroundColor: '#FDE8E8',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  btnRemovePartText: {
+    color: colors.danger,
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  emptyPartsText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontStyle: 'italic',
+    paddingVertical: 6,
+  },
+  financeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  financeLabel: {
+    color: colors.textSecondary,
+    fontSize: 14,
+  },
+  financeValue: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  costInputEditing: {
+    marginBottom: 0,
+    width: 100,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    textAlign: 'right',
+  },
+  financeDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: 8,
+  },
+  financeTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  financeTotalLabel: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  financeTotalValue: {
+    color: colors.primary,
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+});

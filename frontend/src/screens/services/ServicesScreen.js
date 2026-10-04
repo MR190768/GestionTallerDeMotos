@@ -126,7 +126,8 @@ export default function ServicesScreen({ navigation }) {
     </Text>
 
     <Text style={styles.cost}>
-      Costo: ${Number(item.cost).toFixed(2)}
+      Total: ${Number(item.totalCost ?? item.cost).toFixed(2)}
+      {Number(item.partsCost) > 0 ? ` (inc. $${Number(item.partsCost).toFixed(2)} repuestos)` : ''}
     </Text>
   </TouchableOpacity>
 );

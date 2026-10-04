@@ -15,6 +15,9 @@ router.get('/', partsController.listarRepuestos);
 // Registrar entrada o salida de stock
 router.post('/movement', partsController.registrarMovimiento);
 
+// Historial de repuestos utilizados en órdenes de servicio
+router.get('/history/services', partsController.obtenerHistorialEnServicios);
+
 // Detalle de un repuesto
 router.get('/:id', partsController.obtenerRepuestoPorId);
 

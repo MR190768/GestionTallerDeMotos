@@ -34,11 +34,20 @@ const registrarMovimiento = async (datosMovimiento) => {
   return respuesta.data;
 };
 
+// Obtiene el historial de repuestos utilizados en órdenes de servicio
+const obtenerHistorialRepuestosEnServicios = async (busqueda) => {
+  const parametros = busqueda && busqueda.trim() ? { busqueda: busqueda.trim() } : {};
+  const respuesta = await axiosClient.get('/parts/history/services', { params: parametros });
+  return respuesta.data;
+};
+
 export {
   obtenerRepuestos,
   obtenerRepuestoPorId,
   crearRepuesto,
   actualizarRepuesto,
   eliminarRepuesto,
-  registrarMovimiento
+  registrarMovimiento,
+  obtenerHistorialRepuestosEnServicios
 };
+

@@ -83,10 +83,59 @@ const updateServiceStatus = async (req, res, next) => {
     }
 };
 
+const getServiceParts = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const parts = await servicesService.getServiceParts(id);
+        res.json(parts);
+    } catch (error) {
+        next(error);
+    }
+};
+
+const addPartToService = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { partId, quantity } = req.body;
+        const userId = req.user ? req.user.id : null;
+
+        const updatedService = await servicesService.addPartToService(
+            id,
+            partId,
+            quantity,
+            userId
+        );
+
+        res.status(201).json(updatedService);
+    } catch (error) {
+        next(error);
+    }
+};
+
+const removePartFromService = async (req, res, next) => {
+    try {
+        const { id, partItemId } = req.params;
+        const userId = req.user ? req.user.id : null;
+
+        const updatedService = await servicesService.removePartFromService(
+            id,
+            partItemId,
+            userId
+        );
+
+        res.json(updatedService);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getAllServices,
     getServiceById,
     createService,
     updateService,
-    updateServiceStatus
-};
+    updateServiceStatus,
+    getServiceParts,
+    addPartToService,
+    removePartFromService
+};

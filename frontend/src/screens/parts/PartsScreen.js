@@ -16,7 +16,8 @@ import {
   crearRepuesto,
   actualizarRepuesto,
   eliminarRepuesto,
-  registrarMovimiento
+  registrarMovimiento,
+  obtenerHistorialRepuestosEnServicios
 } from '../../services/partService';
 import { handleApiError, getErrorMessage } from '../../utils/errorHandler';
 import RepuestoItem from '../../components/parts/RepuestoItem';
@@ -27,6 +28,10 @@ import ModalRepuesto from '../../components/parts/ModalRepuesto';
 const ESPERA_BUSQUEDA = 350;
 
 export default function PartsScreen() {
+  // Pestaña activa: 'stock' (Catálogo y Stock) | 'history' (Historial en Servicios)
+  const [tabActiva, setTabActiva] = useState('stock');
+
+  // --- Estado de la pestaña Stock / Catálogo ---
   const [repuestos, setRepuestos] = useState([]);
   const [busqueda, setBusqueda] = useState('');
   const [cargando, setCargando] = useState(true);
@@ -41,14 +46,22 @@ export default function PartsScreen() {
   const [modalRepuestoVisible, setModalRepuestoVisible] = useState(false);
   const [repuestoEnEdicion, setRepuestoEnEdicion] = useState(null);
 
-  // Evita que una respuesta lenta pise a una búsqueda más reciente
-  const contadorPeticiones = useRef(0);
+  // --- Estado de la pestaña Historial en Servicios ---
+  const [historialServicios, setHistorialServicios] = useState([]);
+  const [busquedaHistorial, setBusquedaHistorial] = useState('');
+  const [cargandoHistorial, setCargandoHistorial] = useState(false);
+  const [refrescandoHistorial, setRefrescandoHistorial] = useState(false);
+  const [errorHistorial, setErrorHistorial] = useState('');
 
-  const repuestoSeleccionado = repuestos.find((repuesto) => repuesto.id === idSeleccionado) || null;
+  // Evita que respuestas viejas sobrescriban búsquedas recientes
+  const contadorPeticionesStock = useRef(0);
+  const contadorPeticionesHistorial = useRef(0);
 
-  // --- Cargar catálogo (con o sin texto de búsqueda) ---
+  const repuestoSeleccionado = repuestos.find((r) => r.id === idSeleccionado) || null;
+
+  // --- Cargar catálogo de repuestos ---
   const cargarRepuestos = useCallback(async (texto) => {
-    const numeroPeticion = ++contadorPeticiones.current;
+    const numPet = ++contadorPeticionesStock.current;
 
     try {
       setCargando(true);
@@ -56,51 +69,95 @@ export default function PartsScreen() {
 
       const datos = await obtenerRepuestos(texto);
 
-      if (numeroPeticion === contadorPeticiones.current) {
+      if (numPet === contadorPeticionesStock.current) {
         setRepuestos(datos);
       }
     } catch (error) {
-      if (numeroPeticion === contadorPeticiones.current) {
+      if (numPet === contadorPeticionesStock.current) {
         setErrorCarga(getErrorMessage(error, 'No se pudo cargar el inventario'));
       }
     } finally {
-      if (numeroPeticion === contadorPeticiones.current) {
+      if (numPet === contadorPeticionesStock.current) {
         setCargando(false);
       }
     }
   }, []);
 
-  // --- Buscar por código o nombre (con espera para no saturar el servidor) ---
+  // --- Cargar historial de uso en servicios ---
+  const cargarHistorialServicios = useCallback(async (texto) => {
+    const numPet = ++contadorPeticionesHistorial.current;
+
+    try {
+      setCargandoHistorial(true);
+      setErrorHistorial('');
+
+      const datos = await obtenerHistorialRepuestosEnServicios(texto);
+
+      if (numPet === contadorPeticionesHistorial.current) {
+        setHistorialServicios(datos);
+      }
+    } catch (error) {
+      if (numPet === contadorPeticionesHistorial.current) {
+        setErrorHistorial(getErrorMessage(error, 'No se pudo cargar el historial de servicios'));
+      }
+    } finally {
+      if (numPet === contadorPeticionesHistorial.current) {
+        setCargandoHistorial(false);
+      }
+    }
+  }, []);
+
+  // Debounce para búsqueda en catálogo
   useEffect(() => {
-    const espera = busqueda.trim() === '' ? 0 : ESPERA_BUSQUEDA;
-    const temporizador = setTimeout(() => cargarRepuestos(busqueda), espera);
+    if (tabActiva === 'stock') {
+      const espera = busqueda.trim() === '' ? 0 : ESPERA_BUSQUEDA;
+      const temporizador = setTimeout(() => cargarRepuestos(busqueda), espera);
+      return () => clearTimeout(temporizador);
+    }
+  }, [busqueda, tabActiva, cargarRepuestos]);
 
-    return () => clearTimeout(temporizador);
-  }, [busqueda, cargarRepuestos]);
+  // Debounce para búsqueda en historial
+  useEffect(() => {
+    if (tabActiva === 'history') {
+      const espera = busquedaHistorial.trim() === '' ? 0 : ESPERA_BUSQUEDA;
+      const temporizador = setTimeout(() => cargarHistorialServicios(busquedaHistorial), espera);
+      return () => clearTimeout(temporizador);
+    }
+  }, [busquedaHistorial, tabActiva, cargarHistorialServicios]);
 
-  // --- Deslizar hacia abajo para recargar ---
-  const manejarRecarga = async () => {
+  // Carga inicial al cambiar de pestaña
+  useEffect(() => {
+    if (tabActiva === 'history' && historialServicios.length === 0 && !cargandoHistorial) {
+      cargarHistorialServicios(busquedaHistorial);
+    }
+  }, [tabActiva]);
+
+  // Recarga catálogo
+  const manejarRecargaStock = async () => {
     setRefrescando(true);
     await cargarRepuestos(busqueda);
     setRefrescando(false);
   };
 
-  // --- Seleccionar / deseleccionar un repuesto de la lista ---
+  // Recarga historial
+  const manejarRecargaHistorial = async () => {
+    setRefrescandoHistorial(true);
+    await cargarHistorialServicios(busquedaHistorial);
+    setRefrescandoHistorial(false);
+  };
+
   const manejarSeleccion = (repuesto) => {
     setIdSeleccionado(repuesto.id === idSeleccionado ? null : repuesto.id);
   };
 
-  // --- Abrir el modal de entrada o salida ---
   const abrirMovimiento = (tipo) => {
     if (!repuestoSeleccionado) {
       Alert.alert('Selecciona un repuesto', 'Toca un repuesto de la lista para registrar su entrada o salida.');
       return;
     }
-
     setTipoMovimiento(tipo);
   };
 
-  // --- Registrar entrada o salida ---
   const confirmarMovimiento = async (cantidad, motivo) => {
     try {
       const { repuesto } = await registrarMovimiento({
@@ -110,8 +167,7 @@ export default function PartsScreen() {
         reason: motivo,
       });
 
-      // Se actualiza solo ese repuesto en la lista, sin volver a pedir todo el catálogo
-      setRepuestos((actuales) => actuales.map((actual) => (actual.id === repuesto.id ? repuesto : actual)));
+      setRepuestos((actuales) => actuales.map((a) => (a.id === repuesto.id ? repuesto : a)));
       setTipoMovimiento(null);
       return true;
     } catch (error) {
@@ -120,7 +176,6 @@ export default function PartsScreen() {
     }
   };
 
-  // --- Crear o editar un repuesto ---
   const abrirNuevoRepuesto = () => {
     setRepuestoEnEdicion(null);
     setModalRepuestoVisible(true);
@@ -148,11 +203,10 @@ export default function PartsScreen() {
     }
   };
 
-  // --- Eliminar un repuesto ---
   const confirmarEliminacion = (repuesto) => {
     Alert.alert(
       'Eliminar repuesto',
-      `¿Seguro que quieres eliminar "${repuesto.name}"? También se borrará su historial de movimientos.`,
+      `¿Seguro que quieres eliminar "${repuesto.name}"?`,
       [
         { text: 'No', style: 'cancel' },
         {
@@ -172,88 +226,294 @@ export default function PartsScreen() {
     );
   };
 
-  // --- Contenido cuando la lista está vacía ---
-  const renderizarListaVacia = () => {
-    if (cargando) {
-      return <ActivityIndicator size="large" color={colors.primary} style={styles.cargando} />;
+  const formatearFecha = (fecha) => {
+    if (!fecha) return 'Sin fecha';
+    try {
+      return new Date(fecha).toLocaleString('es-SV', {
+        dateStyle: 'short',
+        timeStyle: 'short'
+      });
+    } catch {
+      return String(fecha);
     }
-
-    if (errorCarga) {
-      return (
-        <View style={styles.estadoVacio}>
-          <Text style={styles.textoError}>{errorCarga}</Text>
-          <TouchableOpacity style={styles.botonReintentar} onPress={() => cargarRepuestos(busqueda)}>
-            <Text style={styles.textoBotonReintentar}>Reintentar</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    return (
-      <Text style={styles.textoVacio}>
-        {busqueda.trim() ? 'No se encontraron repuestos con esa búsqueda.' : 'Aún no hay repuestos en el inventario.'}
-      </Text>
-    );
   };
+
+  const getStatusBadgeStyle = (status) => {
+    switch (status) {
+      case 'IN_PROGRESS':
+        return styles.statusInProgress;
+      case 'COMPLETED':
+        return styles.statusCompleted;
+      case 'CANCELLED':
+        return styles.statusCancelled;
+      default:
+        return styles.statusPending;
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'IN_PROGRESS':
+        return 'En proceso';
+      case 'COMPLETED':
+        return 'Finalizado';
+      case 'CANCELLED':
+        return 'Cancelado';
+      default:
+        return 'Pendiente';
+    }
+  };
+
+  // Totales estadísticos del historial cargado
+  const totalPiezasHistorial = historialServicios.reduce(
+    (acc, h) => acc + (parseInt(h.quantity, 10) || 0),
+    0
+  );
+  const totalMontoHistorial = historialServicios.reduce(
+    (acc, h) => acc + (parseFloat(h.subtotal) || 0),
+    0
+  );
 
   return (
     <View style={styles.contenedor}>
-      <TextInput
-        style={styles.buscador}
-        placeholder="Buscar por código o nombre"
-        placeholderTextColor={colors.textMuted}
-        value={busqueda}
-        onChangeText={setBusqueda}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
+      {/* Selector de pestañas superiores */}
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          style={[styles.tabButton, tabActiva === 'stock' && styles.tabButtonActive]}
+          onPress={() => setTabActiva('stock')}
+        >
+          <Text style={[styles.tabButtonText, tabActiva === 'stock' && styles.tabButtonTextActive]}>
+            📦 Catálogo y Stock
+          </Text>
+        </TouchableOpacity>
 
-      <View style={styles.encabezadoLista}>
-        <Text style={styles.tituloSeccion}>Stock actual</Text>
-
-        <TouchableOpacity style={styles.botonNuevo} onPress={abrirNuevoRepuesto}>
-          <Text style={styles.textoBotonNuevo}>+ Nuevo</Text>
+        <TouchableOpacity
+          style={[styles.tabButton, tabActiva === 'history' && styles.tabButtonActive]}
+          onPress={() => setTabActiva('history')}
+        >
+          <Text style={[styles.tabButtonText, tabActiva === 'history' && styles.tabButtonTextActive]}>
+            📋 Historial en Servicios
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        style={styles.lista}
-        data={repuestos}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <RepuestoItem
-            repuesto={item}
-            seleccionado={item.id === idSeleccionado}
-            onPress={() => manejarSeleccion(item)}
-            onEditar={() => abrirEdicion(item)}
-            onEliminar={() => confirmarEliminacion(item)}
+      {/* ==================================================================== */}
+      {/* VISTA 1: CATÁLOGO Y STOCK DE INVENTARIO                              */}
+      {/* ==================================================================== */}
+      {tabActiva === 'stock' && (
+        <>
+          <TextInput
+            style={styles.buscador}
+            placeholder="Buscar por código o nombre"
+            placeholderTextColor={colors.textMuted}
+            value={busqueda}
+            onChangeText={setBusqueda}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
-        )}
-        ListEmptyComponent={renderizarListaVacia}
-        refreshControl={<RefreshControl refreshing={refrescando} onRefresh={manejarRecarga} tintColor={colors.primary} />}
-        keyboardShouldPersistTaps="handled"
-      />
 
-      {/* Sección inferior: registrar movimiento (según el mockup de Inventario) */}
-      <View style={styles.seccionMovimiento}>
-        <Text style={styles.tituloSeccion}>Registrar movimiento</Text>
-        <Text style={styles.ayudaMovimiento}>
-          {repuestoSeleccionado
-            ? `Seleccionado: ${repuestoSeleccionado.name}`
-            : 'Toca un repuesto de la lista para elegirlo'}
-        </Text>
+          <View style={styles.encabezadoLista}>
+            <Text style={styles.tituloSeccion}>Stock actual</Text>
 
-        <View style={styles.botonesMovimiento}>
-          <TouchableOpacity style={styles.botonMovimiento} onPress={() => abrirMovimiento('ENTRY')}>
-            <Text style={styles.textoBotonMovimiento}>↓ Entrada</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.botonNuevo} onPress={abrirNuevoRepuesto}>
+              <Text style={styles.textoBotonNuevo}>+ Nuevo</Text>
+            </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity style={styles.botonMovimiento} onPress={() => abrirMovimiento('EXIT')}>
-            <Text style={styles.textoBotonMovimiento}>↑ Salida</Text>
-          </TouchableOpacity>
+          <FlatList
+            style={styles.lista}
+            data={repuestos}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <RepuestoItem
+                repuesto={item}
+                seleccionado={item.id === idSeleccionado}
+                onPress={() => manejarSeleccion(item)}
+                onEditar={() => abrirEdicion(item)}
+                onEliminar={() => confirmarEliminacion(item)}
+              />
+            )}
+            ListEmptyComponent={() => {
+              if (cargando) {
+                return <ActivityIndicator size="large" color={colors.primary} style={styles.cargando} />;
+              }
+              if (errorCarga) {
+                return (
+                  <View style={styles.estadoVacio}>
+                    <Text style={styles.textoError}>{errorCarga}</Text>
+                    <TouchableOpacity style={styles.botonReintentar} onPress={() => cargarRepuestos(busqueda)}>
+                      <Text style={styles.textoBotonReintentar}>Reintentar</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              }
+              return (
+                <Text style={styles.textoVacio}>
+                  {busqueda.trim()
+                    ? 'No se encontraron repuestos con esa búsqueda.'
+                    : 'Aún no hay repuestos en el inventario.'}
+                </Text>
+              );
+            }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refrescando}
+                onRefresh={manejarRecargaStock}
+                tintColor={colors.primary}
+              />
+            }
+            keyboardShouldPersistTaps="handled"
+          />
+
+          {/* Sección inferior: registrar entrada o salida manual */}
+          <View style={styles.seccionMovimiento}>
+            <Text style={styles.tituloSeccion}>Ajuste manual de stock</Text>
+            <Text style={styles.ayudaMovimiento}>
+              {repuestoSeleccionado
+                ? `Seleccionado: ${repuestoSeleccionado.name}`
+                : 'Toca un repuesto de la lista para elegirlo'}
+            </Text>
+
+            <View style={styles.botonesMovimiento}>
+              <TouchableOpacity style={styles.botonMovimiento} onPress={() => abrirMovimiento('ENTRY')}>
+                <Text style={styles.textoBotonMovimiento}>↓ Entrada</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.botonMovimiento} onPress={() => abrirMovimiento('EXIT')}>
+                <Text style={styles.textoBotonMovimiento}>↑ Salida</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </>
+      )}
+
+      {/* ==================================================================== */}
+      {/* VISTA 2: HISTORIAL DE REPUESTOS USADOS EN SERVICIOS                  */}
+      {/* ==================================================================== */}
+      {tabActiva === 'history' && (
+        <View style={styles.historyContainer}>
+          <TextInput
+            style={styles.buscador}
+            placeholder="Buscar por repuesto, placa o cliente..."
+            placeholderTextColor={colors.textMuted}
+            value={busquedaHistorial}
+            onChangeText={setBusquedaHistorial}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
+          {/* Barra de resumen estadístico */}
+          <View style={styles.statsBanner}>
+            <View style={styles.statBox}>
+              <Text style={styles.statNumber}>{historialServicios.length}</Text>
+              <Text style={styles.statLabel}>Registros</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statBox}>
+              <Text style={styles.statNumber}>{totalPiezasHistorial}</Text>
+              <Text style={styles.statLabel}>Piezas usadas</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statNumber, styles.statNumberMoney]}>
+                ${totalMontoHistorial.toFixed(2)}
+              </Text>
+              <Text style={styles.statLabel}>Total repuestos</Text>
+            </View>
+          </View>
+
+          <FlatList
+            style={styles.lista}
+            data={historialServicios}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.historyCard}>
+                {/* Cabecera de la tarjeta: Repuesto y Orden de Servicio */}
+                <View style={styles.historyCardHeader}>
+                  <View style={styles.partCodeBadge}>
+                    <Text style={styles.partCodeText}>{item.partCode}</Text>
+                  </View>
+
+                  <View style={[styles.statusBadge, getStatusBadgeStyle(item.serviceStatus)]}>
+                    <Text style={styles.statusBadgeText}>
+                      Orden #{item.serviceId} · {getStatusLabel(item.serviceStatus)}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Nombre del repuesto y desglose económico */}
+                <View style={styles.historyRowMain}>
+                  <Text style={styles.historyPartName}>{item.partName}</Text>
+                  <Text style={styles.historySubtotal}>${Number(item.subtotal).toFixed(2)}</Text>
+                </View>
+
+                <Text style={styles.historyQuantityText}>
+                  Cantidad: {item.quantity} {item.quantity === 1 ? 'unidad' : 'unidades'} × ${Number(item.unitPrice).toFixed(2)} c/u
+                </Text>
+
+                <View style={styles.cardDivider} />
+
+                {/* Información del vehículo y cliente */}
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Vehículo:</Text>
+                  <Text style={styles.metaValue} numberOfLines={1}>
+                    {item.motorcycleBrand} {item.motorcycleModel} ({item.licensePlate || 'Sin placa'})
+                  </Text>
+                </View>
+
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Cliente:</Text>
+                  <Text style={styles.metaValue} numberOfLines={1}>
+                    {item.clientName}
+                  </Text>
+                </View>
+
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Fecha:</Text>
+                  <Text style={styles.metaDate}>
+                    {formatearFecha(item.dateUsed)}
+                  </Text>
+                </View>
+              </View>
+            )}
+            ListEmptyComponent={() => {
+              if (cargandoHistorial) {
+                return <ActivityIndicator size="large" color={colors.primary} style={styles.cargando} />;
+              }
+              if (errorHistorial) {
+                return (
+                  <View style={styles.estadoVacio}>
+                    <Text style={styles.textoError}>{errorHistorial}</Text>
+                    <TouchableOpacity
+                      style={styles.botonReintentar}
+                      onPress={() => cargarHistorialServicios(busquedaHistorial)}
+                    >
+                      <Text style={styles.textoBotonReintentar}>Reintentar</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              }
+              return (
+                <Text style={styles.textoVacio}>
+                  {busquedaHistorial.trim()
+                    ? 'No se encontraron registros de repuestos en servicios con esa búsqueda.'
+                    : 'Aún no se han utilizado repuestos en órdenes de servicio.'}
+                </Text>
+              );
+            }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refrescandoHistorial}
+                onRefresh={manejarRecargaHistorial}
+                tintColor={colors.primary}
+              />
+            }
+            keyboardShouldPersistTaps="handled"
+          />
         </View>
-      </View>
+      )}
 
+      {/* Modales de Gestión de Repuestos */}
       <ModalMovimiento
         visible={tipoMovimiento !== null}
         tipo={tipoMovimiento}
@@ -276,22 +536,89 @@ const styles = StyleSheet.create({
   contenedor: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: 20,
+    padding: 16,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F0F2F1',
+    borderRadius: 10,
+    padding: 4,
+    marginBottom: 14,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  tabButtonActive: {
+    backgroundColor: colors.surface,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  tabButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  tabButtonTextActive: {
+    color: colors.text,
+    fontWeight: 'bold',
+  },
+  historyContainer: {
+    flex: 1,
   },
   buscador: {
     backgroundColor: colors.inputBackground,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
-    padding: 12,
+    padding: 10,
+    fontSize: 14,
     color: colors.text,
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  statsBanner: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  statBox: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.text,
+  },
+  statNumberMoney: {
+    color: colors.primary,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: colors.border,
   },
   encabezadoLista: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   tituloSeccion: {
     fontSize: 16,
@@ -305,7 +632,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   textoBotonNuevo: {
-    color: colors.textDark,
+    color: colors.charcoal,
     fontWeight: 'bold',
     fontSize: 13,
   },
@@ -319,6 +646,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: colors.textSecondary,
     marginTop: 30,
+    fontSize: 14,
   },
   estadoVacio: {
     alignItems: 'center',
@@ -343,14 +671,14 @@ const styles = StyleSheet.create({
   seccionMovimiento: {
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingTop: 14,
+    paddingTop: 12,
     marginTop: 8,
   },
   ayudaMovimiento: {
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   botonesMovimiento: {
     flexDirection: 'row',
@@ -361,12 +689,113 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
-    padding: 12,
+    padding: 10,
     alignItems: 'center',
     backgroundColor: colors.surface,
   },
   textoBotonMovimiento: {
     color: colors.text,
     fontWeight: 'bold',
+  },
+  // Tarjetas de historial en servicios
+  historyCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+  },
+  historyCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  partCodeBadge: {
+    backgroundColor: '#EEF2F0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  partCodeText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: colors.textSecondary,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: colors.text,
+  },
+  statusPending: {
+    borderColor: colors.border,
+    backgroundColor: '#F5F5F5',
+  },
+  statusInProgress: {
+    borderColor: colors.primary,
+    backgroundColor: '#E0F7EF',
+  },
+  statusCompleted: {
+    borderColor: colors.success,
+    backgroundColor: '#E6F9F0',
+  },
+  statusCancelled: {
+    borderColor: colors.danger,
+    backgroundColor: '#FDE8E8',
+  },
+  historyRowMain: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  historyPartName: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: colors.text,
+    flex: 1,
+    marginRight: 8,
+  },
+  historySubtotal: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.primary,
+  },
+  historyQuantityText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#EAEAEA',
+    marginVertical: 8,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 3,
+  },
+  metaLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  metaValue: {
+    fontSize: 12,
+    color: colors.text,
+    maxWidth: '70%',
+    textAlign: 'right',
+  },
+  metaDate: {
+    fontSize: 11,
+    color: colors.textMuted,
   },
 });

@@ -23,4 +23,13 @@ router.put('/:id', servicesController.updateService);
 // Cambiar únicamente el estado
 router.patch('/:id/status', servicesController.updateServiceStatus);
 
-module.exports = router;
+// Obtener partes asignadas a una orden
+router.get('/:id/parts', servicesController.getServiceParts);
+
+// Asignar parte a una orden
+router.post('/:id/parts', servicesController.addPartToService);
+
+// Quitar parte de una orden
+router.delete('/:id/parts/:partItemId', servicesController.removePartFromService);
+
+module.exports = router;

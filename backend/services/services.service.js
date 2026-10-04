@@ -143,10 +143,53 @@ const updateServiceStatus = async (id, status) => {
     return await servicesRepository.getById(id);
 };
 
+const getServiceParts = async (serviceId) => {
+    await getServiceById(serviceId);
+    return await servicesRepository.getPartsByServiceId(serviceId);
+};
+
+const addPartToService = async (serviceId, partId, quantity, userId) => {
+    await getServiceById(serviceId);
+
+    if (!partId) {
+        const error = new Error('El repuesto es obligatorio');
+        error.status = 400;
+        throw error;
+    }
+
+    const cant = Number(quantity);
+    if (!quantity || isNaN(cant) || cant <= 0 || !Number.isInteger(cant)) {
+        const error = new Error('La cantidad debe ser un número entero mayor a 0');
+        error.status = 400;
+        throw error;
+    }
+
+    await servicesRepository.addPartToService(serviceId, partId, cant, userId);
+
+    return await servicesRepository.getById(serviceId);
+};
+
+const removePartFromService = async (serviceId, servicePartId, userId) => {
+    await getServiceById(serviceId);
+
+    if (!servicePartId) {
+        const error = new Error('El ID de asignación del repuesto es obligatorio');
+        error.status = 400;
+        throw error;
+    }
+
+    await servicesRepository.removePartFromService(serviceId, servicePartId, userId);
+
+    return await servicesRepository.getById(serviceId);
+};
+
 module.exports = {
     getAllServices,
     getServiceById,
     createService,
     updateService,
-    updateServiceStatus
-};
+    updateServiceStatus,
+    getServiceParts,
+    addPartToService,
+    removePartFromService
+};

@@ -211,7 +211,14 @@ const eliminarRepuesto = async (id) => {
     const idNumerico = validarId(id);
 
     await obtenerRepuestoPorId(idNumerico);
-    await partsRepository.eliminar(idNumerico);
+    try {
+        await partsRepository.eliminar(idNumerico);
+    } catch (error) {
+        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+            lanzarError('No se puede eliminar el repuesto porque ya ha sido utilizado en órdenes de servicio', 409);
+        }
+        throw error;
+    }
 };
 
 /**
@@ -260,11 +267,21 @@ const registrarMovimiento = async (datos, idUsuario) => {
     };
 };
 
+const obtenerHistorialEnServicios = async (busqueda, partId) => {
+    let idNumerico = null;
+    if (partId) {
+        idNumerico = validarId(partId);
+    }
+    return await partsRepository.obtenerHistorialEnServicios(busqueda, idNumerico);
+};
+
 module.exports = {
     listarRepuestos,
     obtenerRepuestoPorId,
     crearRepuesto,
     actualizarRepuesto,
     eliminarRepuesto,
-    registrarMovimiento
+    registrarMovimiento,
+    obtenerHistorialEnServicios
 };
+

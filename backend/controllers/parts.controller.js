@@ -74,11 +74,25 @@ const registrarMovimiento = async (req, res, next) => {
     }
 };
 
+// GET /api/parts/history/services  → Lista el historial de repuestos usados en servicios
+const obtenerHistorialEnServicios = async (req, res, next) => {
+    try {
+        const { busqueda, partId } = req.query;
+        const historial = await partsService.obtenerHistorialEnServicios(busqueda, partId);
+
+        res.json(historial);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     listarRepuestos,
     obtenerRepuestoPorId,
     crearRepuesto,
     actualizarRepuesto,
     eliminarRepuesto,
-    registrarMovimiento
+    registrarMovimiento,
+    obtenerHistorialEnServicios
 };
+

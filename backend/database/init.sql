@@ -168,7 +168,23 @@ CREATE TABLE IF NOT EXISTS part_movements (
 );
 
 -- --------------------------------------------------------------------
--- 10. Tabla de Finanzas (Deudas y Pagos)
+-- 10. Tabla Intermedia Servicio - Repuestos (service_parts)
+-- Relación 1 a muchos: Un servicio puede usar múltiples partes
+-- --------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS service_parts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    service_id INT NOT NULL,
+    part_id INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    unit_price DECIMAL(10, 2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE,
+    FOREIGN KEY (part_id) REFERENCES parts(id) ON DELETE RESTRICT
+);
+
+-- --------------------------------------------------------------------
+-- 11. Tabla de Finanzas (Deudas y Pagos)
 -- --------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS debts_payments (
     id INT AUTO_INCREMENT PRIMARY KEY,

@@ -224,6 +224,61 @@ const registrarMovimiento = async (idRepuesto, tipo, cantidad, motivo, idUsuario
     }
 };
 
+/**
+ * Obtiene el historial de repuestos utilizados en órdenes de servicio.
+ * Permite filtrar por texto de búsqueda (código/nombre de repuesto, placa de moto o nombre de cliente)
+ * o por un ID de repuesto específico.
+ */
+const obtenerHistorialEnServicios = async (busqueda, partId) => {
+    let consulta = `
+        SELECT
+            sp.id,
+            sp.service_id AS serviceId,
+            sp.part_id AS partId,
+            sp.quantity,
+            sp.unit_price AS unitPrice,
+            (sp.quantity * sp.unit_price) AS subtotal,
+            sp.created_at AS dateUsed,
+            p.code AS partCode,
+            p.name AS partName,
+            s.status AS serviceStatus,
+            s.description AS serviceDescription,
+            m.brand AS motorcycleBrand,
+            m.model AS motorcycleModel,
+            m.license_plate AS licensePlate,
+            c.name AS clientName,
+            c.phone AS clientPhone
+        FROM service_parts sp
+        INNER JOIN parts p ON sp.part_id = p.id
+        INNER JOIN services s ON sp.service_id = s.id
+        INNER JOIN motorcycles m ON s.motorcycle_id = m.id
+        INNER JOIN clients c ON m.client_id = c.id
+    `;
+
+    const condiciones = [];
+    const parametros = [];
+
+    if (partId) {
+        condiciones.push('sp.part_id = ?');
+        parametros.push(partId);
+    }
+
+    if (busqueda && busqueda.trim()) {
+        const patron = `%${escaparComodines(busqueda.trim())}%`;
+        condiciones.push('(p.code LIKE ? OR p.name LIKE ? OR m.license_plate LIKE ? OR c.name LIKE ?)');
+        parametros.push(patron, patron, patron, patron);
+    }
+
+    if (condiciones.length > 0) {
+        consulta += ` WHERE ${condiciones.join(' AND ')}`;
+    }
+
+    consulta += ' ORDER BY sp.created_at DESC, sp.id DESC';
+
+    const [filas] = await pool.query(consulta, parametros);
+    return filas;
+};
+
 module.exports = {
     listar,
     obtenerPorId,
@@ -231,5 +286,7 @@ module.exports = {
     crear,
     actualizar,
     eliminar,
-    registrarMovimiento
+    registrarMovimiento,
+    obtenerHistorialEnServicios
 };
+

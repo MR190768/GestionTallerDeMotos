@@ -31,10 +31,31 @@ const updateServiceStatus = async (id, status) => {
   return response.data;
 };
 
+const getServiceParts = async (id) => {
+  const response = await axiosClient.get(`/services/${id}/parts`);
+  return response.data;
+};
+
+const addPartToService = async (id, { partId, quantity }) => {
+  const response = await axiosClient.post(`/services/${id}/parts`, {
+    partId,
+    quantity,
+  });
+  return response.data;
+};
+
+const removePartFromService = async (id, partItemId) => {
+  const response = await axiosClient.delete(`/services/${id}/parts/${partItemId}`);
+  return response.data;
+};
+
 export {
   getAllServices,
   getServiceById,
   createService,
   updateService,
   updateServiceStatus,
-};
+  getServiceParts,
+  addPartToService,
+  removePartFromService,
+};
