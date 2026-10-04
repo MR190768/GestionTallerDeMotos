@@ -20,9 +20,12 @@ import {
   removePartFromService,
 } from '../../services/serviceOrderService';
 import { handleApiError } from '../../utils/errorHandler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TrashIcon, CloseIcon } from '../../components/common/AppIcons';
 import ModalAsignarRepuesto from '../../components/services/ModalAsignarRepuesto';
 
 export default function ServiceDetailScreen({ route }) {
+  const insets = useSafeAreaInsets();
   const { serviceId } = route.params;
 
   const [service, setService] = useState(null);
@@ -203,7 +206,10 @@ export default function ServiceDetailScreen({ route }) {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: Math.max(insets.bottom, 16) + 32 }
+      ]}
     >
       {/* Encabezado */}
 
@@ -353,7 +359,7 @@ export default function ServiceDetailScreen({ route }) {
                     style={styles.btnRemovePart}
                     onPress={() => handleRemovePart(item)}
                   >
-                    <Text style={styles.btnRemovePartText}>✕</Text>
+                    <TrashIcon size={14} color={colors.danger} />
                   </TouchableOpacity>
                 )}
               </View>

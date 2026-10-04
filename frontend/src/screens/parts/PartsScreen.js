@@ -10,6 +10,7 @@ import {
   Alert,
   StyleSheet
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../theme/colors';
 import {
   obtenerRepuestos,
@@ -23,11 +24,17 @@ import { handleApiError, getErrorMessage } from '../../utils/errorHandler';
 import RepuestoItem from '../../components/parts/RepuestoItem';
 import ModalMovimiento from '../../components/parts/ModalMovimiento';
 import ModalRepuesto from '../../components/parts/ModalRepuesto';
+import {
+  PackageIcon,
+  ClipboardIcon,
+  PlusIcon
+} from '../../components/common/AppIcons';
 
 // Milisegundos de espera tras la última tecla antes de consultar al servidor
 const ESPERA_BUSQUEDA = 350;
 
 export default function PartsScreen() {
+  const insets = useSafeAreaInsets();
   // Pestaña activa: 'stock' (Catálogo y Stock) | 'history' (Historial en Servicios)
   const [tabActiva, setTabActiva] = useState('stock');
 
@@ -282,8 +289,12 @@ export default function PartsScreen() {
           style={[styles.tabButton, tabActiva === 'stock' && styles.tabButtonActive]}
           onPress={() => setTabActiva('stock')}
         >
+          <PackageIcon
+            size={16}
+            color={tabActiva === 'stock' ? colors.textDark : colors.textSecondary}
+          />
           <Text style={[styles.tabButtonText, tabActiva === 'stock' && styles.tabButtonTextActive]}>
-            📦 Catálogo y Stock
+            Catálogo y Stock
           </Text>
         </TouchableOpacity>
 
@@ -291,8 +302,12 @@ export default function PartsScreen() {
           style={[styles.tabButton, tabActiva === 'history' && styles.tabButtonActive]}
           onPress={() => setTabActiva('history')}
         >
+          <ClipboardIcon
+            size={16}
+            color={tabActiva === 'history' ? colors.textDark : colors.textSecondary}
+          />
           <Text style={[styles.tabButtonText, tabActiva === 'history' && styles.tabButtonTextActive]}>
-            📋 Historial en Servicios
+            Historial en Servicios
           </Text>
         </TouchableOpacity>
       </View>
@@ -316,12 +331,16 @@ export default function PartsScreen() {
             <Text style={styles.tituloSeccion}>Stock actual</Text>
 
             <TouchableOpacity style={styles.botonNuevo} onPress={abrirNuevoRepuesto}>
-              <Text style={styles.textoBotonNuevo}>+ Nuevo</Text>
+              <PlusIcon size={14} color={colors.textDark} />
+              <Text style={styles.textoBotonNuevo}>Nuevo</Text>
             </TouchableOpacity>
           </View>
 
           <FlatList
             style={styles.lista}
+            contentContainerStyle={{
+              paddingBottom: Math.max(insets.bottom, 16) + 30
+            }}
             data={repuestos}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
@@ -424,6 +443,9 @@ export default function PartsScreen() {
 
           <FlatList
             style={styles.lista}
+            contentContainerStyle={{
+              paddingBottom: Math.max(insets.bottom, 16) + 30
+            }}
             data={historialServicios}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
@@ -630,6 +652,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   textoBotonNuevo: {
     color: colors.charcoal,

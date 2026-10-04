@@ -9,14 +9,22 @@ import {
   Alert
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../theme/colors';
 import {
   getMotorcycleById,
   deleteMotorcycle
 } from '../../services/motorcycleService';
 import { handleApiError } from '../../utils/errorHandler';
+import {
+  UserIcon,
+  WrenchIcon,
+  PlusIcon,
+  ChevronRightIcon
+} from '../../components/common/AppIcons';
 
 export default function MotorcycleDetailScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { motorcycleId } = route.params;
   const [motorcycle, setMotorcycle] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -113,7 +121,13 @@ export default function MotorcycleDetailScreen({ route, navigation }) {
   const servicesHistory = motorcycle.servicesHistory || [];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.contentContainer,
+        { paddingBottom: Math.max(insets.bottom, 16) + 32 }
+      ]}
+    >
       {/* Cabecera Principal con Placa y Datos */}
       <View style={styles.headerCard}>
         <View style={styles.plateContainer}>
@@ -136,7 +150,8 @@ export default function MotorcycleDetailScreen({ route, navigation }) {
             preselectedMotorcycleId: motorcycle.id
           })}
         >
-          <Text style={styles.btnActionPrimaryText}>+ Nueva Orden de Servicio</Text>
+          <PlusIcon size={16} color={colors.textDark} />
+          <Text style={styles.btnActionPrimaryText}>Nueva Orden de Servicio</Text>
         </TouchableOpacity>
 
         <View style={styles.secondaryActions}>
@@ -158,11 +173,16 @@ export default function MotorcycleDetailScreen({ route, navigation }) {
 
       {/* Tarjeta del Propietario / Cliente */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>👤 Propietario Asociado</Text>
+        <View style={styles.sectionTitleRow}>
+          <UserIcon size={16} color={colors.text} />
+          <Text style={styles.sectionTitle}>Propietario Asociado</Text>
+        </View>
         <TouchableOpacity
+          style={styles.linkRow}
           onPress={() => navigation.navigate('ClientInformation', { clientId: motorcycle.clientId })}
         >
-          <Text style={styles.linkText}>Ver Ficha de Cliente →</Text>
+          <Text style={styles.linkText}>Ver Ficha de Cliente</Text>
+          <ChevronRightIcon size={14} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -192,9 +212,12 @@ export default function MotorcycleDetailScreen({ route, navigation }) {
 
       {/* Historial de Visitas y Órdenes de Servicio */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>
-          🔧 Historial de Visitas y Servicios ({servicesHistory.length})
-        </Text>
+        <View style={styles.sectionTitleRow}>
+          <WrenchIcon size={16} color={colors.text} />
+          <Text style={styles.sectionTitle}>
+            Historial de Visitas y Servicios ({servicesHistory.length})
+          </Text>
+        </View>
       </View>
 
       {servicesHistory.length > 0 ? (
@@ -332,7 +355,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingVertical: 12,
     borderRadius: 8,
-    alignItems: 'center'
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6
   },
   btnActionPrimaryText: {
     color: colors.textDark,
@@ -376,10 +402,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 6
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
+  },
   sectionTitle: {
     fontSize: 15,
     fontWeight: 'bold',
     color: colors.text
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4
   },
   linkText: {
     fontSize: 13,

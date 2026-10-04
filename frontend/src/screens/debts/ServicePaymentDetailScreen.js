@@ -10,6 +10,7 @@ import {
   Alert,
   StyleSheet
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../../context/AuthContext';
 import colors from '../../theme/colors';
 import {
@@ -17,8 +18,15 @@ import {
   registerPayment
 } from '../../services/debtService';
 import { handleApiError } from '../../utils/errorHandler';
+import {
+  CashIcon,
+  CardIcon,
+  BankIcon,
+  CheckCircleIcon
+} from '../../components/common/AppIcons';
 
 export default function ServicePaymentDetailScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { serviceId } = route.params || {};
   const { userInfo } = useContext(AuthContext);
 
@@ -179,7 +187,10 @@ export default function ServicePaymentDetailScreen({ route, navigation }) {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[
+        styles.contentContainer,
+        { paddingBottom: Math.max(insets.bottom, 16) + 32 }
+      ]}
       refreshControl={
         <RefreshControl
           refreshing={refrescando}
@@ -292,17 +303,29 @@ export default function ServicePaymentDetailScreen({ route, navigation }) {
 
           <Text style={styles.inputLabel}>Método de Pago</Text>
           <View style={styles.methodsRow}>
-            {['EFECTIVO', 'TARJETA', 'TRANSFERENCIA'].map((m) => (
-              <TouchableOpacity
-                key={m}
-                style={[styles.methodButton, metodoPago === m && styles.methodButtonActive]}
-                onPress={() => setMetodoPago(m)}
-              >
-                <Text style={[styles.methodButtonText, metodoPago === m && styles.methodButtonTextActive]}>
-                  {m === 'EFECTIVO' ? '💵 Efectivo' : m === 'TARJETA' ? '💳 Tarjeta' : '🏦 Transf.'}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {['EFECTIVO', 'TARJETA', 'TRANSFERENCIA'].map((m) => {
+              const isActive = metodoPago === m;
+              return (
+                <TouchableOpacity
+                  key={m}
+                  style={[styles.methodButton, isActive && styles.methodButtonActive]}
+                  onPress={() => setMetodoPago(m)}
+                >
+                  <View style={styles.methodButtonInner}>
+                    {m === 'EFECTIVO' ? (
+                      <CashIcon size={14} color={isActive ? colors.textDark : colors.textSecondary} />
+                    ) : m === 'TARJETA' ? (
+                      <CardIcon size={14} color={isActive ? colors.textDark : colors.textSecondary} />
+                    ) : (
+                      <BankIcon size={14} color={isActive ? colors.textDark : colors.textSecondary} />
+                    )}
+                    <Text style={[styles.methodButtonText, isActive && styles.methodButtonTextActive]}>
+                      {m === 'EFECTIVO' ? 'Efectivo' : m === 'TARJETA' ? 'Tarjeta' : 'Transf.'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           <Text style={styles.inputLabel}>Notas / Referencia (Opcional)</Text>
@@ -336,8 +359,11 @@ export default function ServicePaymentDetailScreen({ route, navigation }) {
         </View>
       ) : (
         <View style={styles.fullyPaidBanner}>
-          <Text style={styles.fullyPaidTitle}>✓ Orden Totalmente Pagada</Text>
-          <Text style={styles.fullyPaidSub}>No quedan saldos pendientes para este servicio.</Text>
+          <CheckCircleIcon size={24} color={colors.success} />
+          <View style={{ marginLeft: 10 }}>
+            <Text style={styles.fullyPaidTitle}>Orden Totalmente Pagada</Text>
+            <Text style={styles.fullyPaidSub}>No quedan saldos pendientes para este servicio.</Text>
+          </View>
         </View>
       )}
 
@@ -578,7 +604,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.background,
+  },
+  methodButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
   methodButtonActive: {
     borderColor: colors.primary,
@@ -628,6 +660,7 @@ const styles = StyleSheet.create({
     borderColor: colors.success,
     borderRadius: 10,
     padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 14,
   },

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,49 +11,64 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import colors from '../../theme/colors';
 import { getAllClients } from '../../services/clientService';
+import { getMotorcyclesByClient } from '../../services/motorcycleService';
 import { createService } from '../../services/serviceOrderService';
-import { handleApiError } from '../../utils/errorHandler';
+import { handleApiError, getErrorMessage } from '../../utils/errorHandler';
+import {
+  UserIcon,
+  MotorcycleIcon,
+  ChevronDownIcon,
+  CheckIcon,
+  PlusIcon,
+  WrenchIcon,
+  CloseIcon,
+  SearchIcon
+} from '../../components/common/AppIcons';
 
 export default function CreateServiceScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const preselectedClientId = route?.params?.preselectedClientId;
   const preselectedMotorcycleId = route?.params?.preselectedMotorcycleId;
 
+  // Clientes
   const [clients, setClients] = useState([]);
-
+  const [clientSearch, setClientSearch] = useState('');
   const [selectedClient, setSelectedClient] = useState(null);
-  const [motorcycleId, setMotorcycleId] = useState(preselectedMotorcycleId ? String(preselectedMotorcycleId) : '');
-  const [description, setDescription] = useState('');
-  const [cost, setCost] = useState('');
-
+  const [loadingClients, setLoadingClients] = useState(true);
   const [clientModalVisible, setClientModalVisible] = useState(false);
 
-  const [loadingClients, setLoadingClients] = useState(true);
+  // Motocicletas del cliente
+  const [clientMotorcycles, setClientMotorcycles] = useState([]);
+  const [selectedMotorcycle, setSelectedMotorcycle] = useState(null);
+  const [loadingMotos, setLoadingMotos] = useState(false);
+  const [errorMotos, setErrorMotos] = useState('');
+
+  // Datos del servicio
+  const [description, setDescription] = useState('');
+  const [cost, setCost] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Cargar lista general de clientes al iniciar
   useEffect(() => {
     loadClients();
-    if (preselectedMotorcycleId) {
-      setMotorcycleId(String(preselectedMotorcycleId));
-    }
-  }, [preselectedMotorcycleId]);
+  }, []);
 
-  // Cargar clientes desde el backend
   const loadClients = async () => {
     try {
       setLoadingClients(true);
-
       const data = await getAllClients();
-
       setClients(data);
 
       if (preselectedClientId && !selectedClient) {
         const found = data.find((c) => c.id === preselectedClientId);
-        if (found) setSelectedClient(found);
+        if (found) {
+          setSelectedClient(found);
+        }
       }
-
     } catch (error) {
       handleApiError(error, 'Error al Cargar Clientes', 'No se pudieron cargar los clientes');
     } finally {
@@ -61,77 +76,108 @@ export default function CreateServiceScreen({ route, navigation }) {
     }
   };
 
-  // Seleccionar cliente
-  const selectClient = (client) => {
-
-    setSelectedClient(client);
-    setMotorcycleId('');
-    setClientModalVisible(false);
-  };
-
-  // Crear orden
-  const handleCreateService = async () => {
-
-    if (!selectedClient) {
-      Alert.alert(
-        'Campo obligatorio',
-        'Selecciona un cliente'
-      );
-
-      return;
-    }
-
-    if (!motorcycleId.trim()) {
-      Alert.alert(
-        'Campo obligatorio',
-        'Ingresa el ID de la motocicleta'
-      );
-
-      return;
-    }
-
-    if (!description.trim()) {
-      Alert.alert(
-        'Campo obligatorio',
-        'Ingresa una descripción del servicio'
-      );
-
-      return;
-    }
-
-    if (!cost.trim()) {
-      Alert.alert(
-        'Campo obligatorio',
-        'Ingresa el costo estimado'
-      );
-
-      return;
-    }
-
-    const numericCost = Number(cost);
-
-    if (Number.isNaN(numericCost) || numericCost < 0) {
-      Alert.alert(
-        'Costo inválido',
-        'Ingresa un costo válido'
-      );
-
+  // Cargar motocicletas cuando cambie el cliente seleccionado
+  const fetchMotorcyclesForClient = useCallback(async (clientId) => {
+    if (!clientId) {
+      setClientMotorcycles([]);
+      setSelectedMotorcycle(null);
       return;
     }
 
     try {
+      setLoadingMotos(true);
+      setErrorMotos('');
+      const motos = await getMotorcyclesByClient(clientId);
+      setClientMotorcycles(motos);
 
+      // Si viene preseleccionada una moto, encontrarla y seleccionarla
+      if (preselectedMotorcycleId) {
+        const preselected = motos.find((m) => m.id === Number(preselectedMotorcycleId));
+        if (preselected) {
+          setSelectedMotorcycle(preselected);
+          return;
+        }
+      }
+
+      // Si solo tiene una motocicleta, auto-seleccionarla para agilizar
+      if (motos.length === 1) {
+        setSelectedMotorcycle(motos[0]);
+      } else {
+        setSelectedMotorcycle(null);
+      }
+    } catch (error) {
+      setErrorMotos(getErrorMessage(error, 'No se pudieron cargar las motocicletas de este cliente.'));
+      setClientMotorcycles([]);
+      setSelectedMotorcycle(null);
+    } finally {
+      setLoadingMotos(false);
+    }
+  }, [preselectedMotorcycleId]);
+
+  useEffect(() => {
+    if (selectedClient?.id) {
+      fetchMotorcyclesForClient(selectedClient.id);
+    } else {
+      setClientMotorcycles([]);
+      setSelectedMotorcycle(null);
+    }
+  }, [selectedClient, fetchMotorcyclesForClient]);
+
+  // Manejar selección de cliente
+  const handleSelectClient = (client) => {
+    setSelectedClient(client);
+    setClientModalVisible(false);
+    setClientSearch('');
+  };
+
+  // Manejar selección de motocicleta
+  const handleSelectMotorcycle = (moto) => {
+    setSelectedMotorcycle(moto);
+  };
+
+  // Crear orden de servicio con validaciones robustas
+  const handleCreateService = async () => {
+    if (!selectedClient) {
+      Alert.alert('Campo Requerido', 'Por favor selecciona un cliente para la orden de servicio.');
+      return;
+    }
+
+    if (!selectedMotorcycle) {
+      Alert.alert(
+        'Motocicleta Requerida',
+        'Debes seleccionar la motocicleta del cliente que ingresará a servicio.'
+      );
+      return;
+    }
+
+    if (!description.trim()) {
+      Alert.alert('Campo Requerido', 'Ingresa una descripción del trabajo o diagnóstico a realizar.');
+      return;
+    }
+
+    if (!cost.trim()) {
+      Alert.alert('Campo Requerido', 'Ingresa el costo estimado de mano de obra para el servicio.');
+      return;
+    }
+
+    const numericCost = Number(cost);
+    if (Number.isNaN(numericCost) || numericCost < 0) {
+      Alert.alert('Costo Inválido', 'Ingresa un valor numérico válido mayor o igual a 0.');
+      return;
+    }
+
+    try {
       setSaving(true);
 
       await createService({
-        motorcycleId: Number(motorcycleId),
+        motorcycleId: selectedMotorcycle.id,
         description: description.trim(),
         cost: numericCost
       });
 
       Alert.alert(
-        'Servicio creado',
-        'La orden de servicio fue registrada correctamente',
+        'Servicio Registrado',
+        `La orden de servicio para la motocicleta ${selectedMotorcycle.brand} ${selectedMotorcycle.model} (${selectedMotorcycle.licensePlate}) fue creada correctamente.`,
         [
           {
             text: 'Aceptar',
@@ -139,373 +185,648 @@ export default function CreateServiceScreen({ route, navigation }) {
           }
         ]
       );
-
     } catch (error) {
-      handleApiError(error, 'Error al Registrar', 'No se pudo crear la orden de servicio');
+      handleApiError(error, 'Error al Crear Orden', 'No se pudo registrar la orden de servicio');
     } finally {
       setSaving(false);
     }
   };
 
+  const filteredClients = clients.filter((c) => {
+    const term = clientSearch.toLowerCase();
+    return (
+      c.name?.toLowerCase().includes(term) ||
+      c.phone?.toLowerCase().includes(term) ||
+      c.email?.toLowerCase().includes(term)
+    );
+  });
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-
-      {/* Cliente */}
-
-      <Text style={styles.label}>
-        Cliente
-      </Text>
-
-      <TouchableOpacity
-        style={styles.selector}
-        onPress={() => setClientModalVisible(true)}
-      >
-        <Text
-          style={
-            selectedClient
-              ? styles.selectorText
-              : styles.placeholder
-          }
-        >
-          {selectedClient
-            ? selectedClient.name
-            : 'Seleccionar cliente'}
-        </Text>
-
-        <Text style={styles.arrow}>
-          ▼
-        </Text>
-
-      </TouchableOpacity>
-
-
-      {/* Motocicleta */}
-
-      <Text style={styles.label}>
-        Motocicleta
-      </Text>
-
-      <TextInput
-        style={styles.input}
-        value={motorcycleId}
-        onChangeText={(value) =>
-          setMotorcycleId(value.replace(/\D/g, ''))
-        }
-        placeholder="Ingresar ID de motocicleta"
-        placeholderTextColor={colors.textSecondary}
-        keyboardType="number-pad"
-      />
-
-      {selectedClient && (
-        <Text style={styles.pendingText}>
-          Ingresa el ID de una motocicleta perteneciente a {selectedClient.name}.
-        </Text>
-      )}
-
-
-      {/* Descripción */}
-
-      <Text style={styles.label}>
-        Descripción del servicio
-      </Text>
-
-      <TextInput
-        style={[
-          styles.input,
-          styles.textArea
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(insets.bottom, 20) + 30 }
         ]}
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Ej. Cambio de aceite y revisión de frenos"
-        placeholderTextColor={colors.textSecondary}
-        multiline
-        numberOfLines={4}
-        maxLength={500}
-      />
-
-
-      {/* Costo */}
-
-      <Text style={styles.label}>
-        Costo estimado
-      </Text>
-
-      <TextInput
-        style={styles.input}
-        value={cost}
-        onChangeText={setCost}
-        placeholder="0.00"
-        placeholderTextColor={colors.textSecondary}
-        keyboardType="decimal-pad"
-      />
-
-
-      {/* Botón Crear */}
-
-      <TouchableOpacity
-        style={[
-          styles.createButton,
-          saving && styles.buttonDisabled
-        ]}
-        disabled={saving}
-        onPress={handleCreateService}
+        keyboardShouldPersistTaps="handled"
       >
+        {/* Cabecera Informativa */}
+        <View style={styles.headerBox}>
+          <WrenchIcon size={24} color={colors.primary} />
+          <View style={{ marginLeft: 12, flex: 1 }}>
+            <Text style={styles.screenTitle}>Nueva Orden de Servicio</Text>
+            <Text style={styles.screenSubtitle}>
+              Asocia el cliente, su vehículo y detalla la labor mecánica a realizar.
+            </Text>
+          </View>
+        </View>
 
-        {saving ? (
-          <ActivityIndicator
-            color={colors.textDark}
+        {/* ==================================================================== */}
+        {/* SECCIÓN 1: CLIENTE Y VEHÍCULO                                        */}
+        {/* ==================================================================== */}
+        <View style={styles.cardSection}>
+          <Text style={styles.sectionHeaderTitle}>1. Propietario y Motocicleta</Text>
+
+          {/* Selector de Cliente */}
+          <Text style={styles.fieldLabel}>Cliente Propietario *</Text>
+          <TouchableOpacity
+            style={styles.selectorButton}
+            onPress={() => setClientModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.selectorLeft}>
+              <UserIcon size={18} color={selectedClient ? colors.text : colors.textMuted} />
+              <Text
+                style={[
+                  styles.selectorText,
+                  !selectedClient && styles.placeholderText
+                ]}
+                numberOfLines={1}
+              >
+                {selectedClient ? selectedClient.name : 'Seleccionar cliente del taller...'}
+              </Text>
+            </View>
+            <ChevronDownIcon size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          {/* Información complementaria del cliente si está seleccionado */}
+          {selectedClient && (
+            <View style={styles.clientBadgeInfo}>
+              <Text style={styles.clientSubDetail}>
+                Tel: {selectedClient.phone || 'Sin teléfono'} • Correo: {selectedClient.email || 'Sin correo'}
+              </Text>
+            </View>
+          )}
+
+          {/* Selector Dinámico de Motocicletas */}
+          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Motocicleta a Intervenir *</Text>
+
+          {!selectedClient ? (
+            <View style={styles.hintBox}>
+              <Text style={styles.hintText}>
+                Primero selecciona un cliente para listar automáticamente sus motocicletas registradas.
+              </Text>
+            </View>
+          ) : loadingMotos ? (
+            <View style={styles.loadingMotosBox}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={styles.loadingMotosText}>Consultando motocicletas del cliente...</Text>
+            </View>
+          ) : errorMotos ? (
+            <View style={styles.errorMotosBox}>
+              <Text style={styles.errorMotosText}>{errorMotos}</Text>
+              <TouchableOpacity
+                style={styles.btnRetryMotos}
+                onPress={() => fetchMotorcyclesForClient(selectedClient.id)}
+              >
+                <Text style={styles.btnRetryMotosText}>Reintentar</Text>
+              </TouchableOpacity>
+            </View>
+          ) : clientMotorcycles.length === 0 ? (
+            <View style={styles.noMotosCard}>
+              <MotorcycleIcon size={32} color={colors.textMuted} />
+              <Text style={styles.noMotosTitle}>Este cliente no tiene motocicletas</Text>
+              <Text style={styles.noMotosSub}>
+                Registra la primera motocicleta para {selectedClient.name} antes de abrir una orden.
+              </Text>
+              <TouchableOpacity
+                style={styles.btnAddMotoQuick}
+                onPress={() =>
+                  navigation.navigate('MotorcycleForm', { preselectedClientId: selectedClient.id })
+                }
+              >
+                <PlusIcon size={16} color={colors.textDark} />
+                <Text style={styles.btnAddMotoQuickText}>Registrar Motocicleta</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.motorcyclesContainer}>
+              <Text style={styles.motosAvailableCount}>
+                Selecciona una de las {clientMotorcycles.length} motocicletas registradas:
+              </Text>
+              {clientMotorcycles.map((moto) => {
+                const isSelected = selectedMotorcycle?.id === moto.id;
+                return (
+                  <TouchableOpacity
+                    key={String(moto.id)}
+                    style={[
+                      styles.motoChoiceCard,
+                      isSelected && styles.motoChoiceCardSelected
+                    ]}
+                    onPress={() => handleSelectMotorcycle(moto)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.motoChoiceLeft}>
+                      <View style={[styles.platePill, isSelected && styles.platePillSelected]}>
+                        <Text style={[styles.plateText, isSelected && styles.plateTextSelected]}>
+                          {moto.licensePlate}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 10 }}>
+                        <Text style={styles.motoChoiceTitle}>
+                          {moto.brand} {moto.model}
+                        </Text>
+                        <Text style={styles.motoChoiceYear}>
+                          {moto.year ? `Año ${moto.year}` : 'Año no especificado'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
+                      {isSelected ? <CheckIcon size={14} color={colors.textDark} /> : null}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
+        {/* ==================================================================== */}
+        {/* SECCIÓN 2: DETALLE DEL TRABAJO Y COSTOS                              */}
+        {/* ==================================================================== */}
+        <View style={styles.cardSection}>
+          <Text style={styles.sectionHeaderTitle}>2. Labor y Presupuesto</Text>
+
+          <Text style={styles.fieldLabel}>Descripción del Trabajo / Diagnóstico *</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Ej. Mantenimiento general, cambio de aceite y filtro, ajuste de frenos y cadena."
+            placeholderTextColor={colors.textMuted}
+            multiline
+            numberOfLines={4}
+            maxLength={500}
           />
-        ) : (
-          <Text style={styles.createButtonText}>
-            Crear Orden
+
+          <Text style={[styles.fieldLabel, { marginTop: 14 }]}>Costo Estimado de Mano de Obra ($) *</Text>
+          <TextInput
+            style={styles.input}
+            value={cost}
+            onChangeText={setCost}
+            placeholder="0.00"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="decimal-pad"
+          />
+          <Text style={styles.costNote}>
+            Nota: Podrás añadir repuestos de inventario posteriormente desde el detalle del servicio.
           </Text>
-        )}
+        </View>
 
-      </TouchableOpacity>
+        {/* Botón de Creación */}
+        <TouchableOpacity
+          style={[styles.btnSubmit, saving && styles.btnDisabled]}
+          onPress={handleCreateService}
+          disabled={saving}
+          activeOpacity={0.8}
+        >
+          {saving ? (
+            <ActivityIndicator color={colors.textDark} />
+          ) : (
+            <View style={styles.btnSubmitContent}>
+              <PlusIcon size={18} color={colors.textDark} />
+              <Text style={styles.btnSubmitText}>Crear Orden de Servicio</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
 
-
-      {/* Modal para seleccionar cliente */}
-
+      {/* Modal para Buscar y Seleccionar Cliente */}
       <Modal
         visible={clientModalVisible}
         transparent={true}
         animationType="slide"
-        onRequestClose={() =>
-          setClientModalVisible(false)
-        }
+        onRequestClose={() => setClientModalVisible(false)}
       >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalContainer,
+              { paddingBottom: Math.max(insets.bottom, 16) + 16 }
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seleccionar Cliente</Text>
+              <TouchableOpacity
+                onPress={() => setClientModalVisible(false)}
+                style={styles.modalCloseBtn}
+              >
+                <CloseIcon size={20} color={colors.text} />
+              </TouchableOpacity>
+            </View>
 
-        <View style={styles.modalBackground}>
-
-          <View style={styles.modalContainer}>
-
-            <Text style={styles.modalTitle}>
-              Seleccionar cliente
-            </Text>
+            {/* Barra de búsqueda interna */}
+            <View style={styles.modalSearchRow}>
+              <SearchIcon size={16} color={colors.textSecondary} />
+              <TextInput
+                style={styles.modalSearchInput}
+                placeholder="Buscar por nombre, teléfono o correo..."
+                placeholderTextColor={colors.textMuted}
+                value={clientSearch}
+                onChangeText={setClientSearch}
+                autoCapitalize="none"
+              />
+            </View>
 
             {loadingClients ? (
-
-              <ActivityIndicator
-                size="large"
-                color={colors.primary}
-              />
-
+              <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 24 }} />
             ) : (
-
               <FlatList
-                data={clients}
-                keyExtractor={(item) =>
-                  item.id.toString()
-                }
+                data={filteredClients}
+                keyExtractor={(item) => String(item.id)}
                 ListEmptyComponent={
-                  <Text style={styles.emptyText}>
-                    No hay clientes registrados
-                  </Text>
+                  <View style={styles.emptyClientsBox}>
+                    <Text style={styles.emptyClientsText}>
+                      No se encontraron clientes que coincidan con la búsqueda.
+                    </Text>
+                  </View>
                 }
                 renderItem={({ item }) => (
-
                   <TouchableOpacity
-                    style={styles.option}
-                    onPress={() =>
-                      selectClient(item)
-                    }
+                    style={styles.clientOption}
+                    onPress={() => handleSelectClient(item)}
                   >
-
-                    <Text style={styles.optionTitle}>
-                      {item.name}
-                    </Text>
-
-                    {item.phone && (
-                      <Text style={styles.optionSubtitle}>
-                        Teléfono: {item.phone}
+                    <View style={styles.clientAvatar}>
+                      <UserIcon size={18} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.clientOptionName}>{item.name}</Text>
+                      <Text style={styles.clientOptionSub}>
+                        {item.phone ? `Tel: ${item.phone}` : 'Sin teléfono'} • {item.email || 'Sin correo'}
                       </Text>
-                    )}
-
-                    {item.email && (
-                      <Text style={styles.optionSubtitle}>
-                        Correo: {item.email}
-                      </Text>
-                    )}
-
+                    </View>
                   </TouchableOpacity>
-
                 )}
               />
-
             )}
-
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() =>
-                setClientModalVisible(false)
-              }
-            >
-
-              <Text style={styles.cancelButtonText}>
-                Cancelar
-              </Text>
-
-            </TouchableOpacity>
-
           </View>
-
         </View>
-
       </Modal>
-
-    </ScrollView>
+    </View>
   );
 }
 
-
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: colors.background
   },
-
+  scrollView: {
+    flex: 1
+  },
   content: {
-    padding: 20,
-    paddingBottom: 40
+    padding: 16
   },
-
-  label: {
-    color: colors.text,
-    fontWeight: 'bold',
+  headerBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3FAF6',
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16
+  },
+  screenTitle: {
     fontSize: 16,
-    marginBottom: 8,
-    marginTop: 16
+    fontWeight: 'bold',
+    color: colors.text
   },
-
-  selector: {
+  screenSubtitle: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2
+  },
+  cardSection: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
-    padding: 14,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2
+  },
+  sectionHeaderTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    paddingBottom: 8
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: 6
+  },
+  selectorButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: 12,
     backgroundColor: colors.surface
   },
-
-  selectorDisabled: {
-    opacity: 0.6
+  selectorLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    marginRight: 8
   },
-
   selectorText: {
+    fontSize: 14,
     color: colors.text,
-    flex: 1,
-    fontSize: 15
+    fontWeight: '500'
   },
-
-  placeholder: {
-    color: colors.textSecondary,
-    flex: 1,
-    fontSize: 15
+  placeholderText: {
+    color: colors.textMuted
   },
-
-  arrow: {
-    color: colors.textSecondary,
-    marginLeft: 10
+  clientBadgeInfo: {
+    backgroundColor: '#F7F7F7',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    marginTop: 6
   },
-
-  pendingText: {
-    color: colors.textSecondary,
+  clientSubDetail: {
+    fontSize: 12,
+    color: colors.textSecondary
+  },
+  hintBox: {
+    backgroundColor: '#FAFAFA',
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    borderRadius: 8,
+    padding: 12
+  },
+  hintText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontStyle: 'italic'
+  },
+  loadingMotosBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 16,
+    justifyContent: 'center'
+  },
+  loadingMotosText: {
     fontSize: 13,
-    marginTop: 7
+    color: colors.textSecondary
   },
-
+  errorMotosBox: {
+    padding: 14,
+    backgroundColor: '#FDE8E8',
+    borderRadius: 8,
+    alignItems: 'center'
+  },
+  errorMotosText: {
+    fontSize: 13,
+    color: colors.danger,
+    textAlign: 'center',
+    marginBottom: 8
+  },
+  btnRetryMotos: {
+    backgroundColor: colors.danger,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 6
+  },
+  btnRetryMotosText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: 'bold'
+  },
+  noMotosCard: {
+    padding: 18,
+    backgroundColor: '#FAFBFB',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.border,
+    alignItems: 'center'
+  },
+  noMotosTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginTop: 8
+  },
+  noMotosSub: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 12
+  },
+  btnAddMotoQuick: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 6
+  },
+  btnAddMotoQuickText: {
+    color: colors.textDark,
+    fontSize: 13,
+    fontWeight: 'bold'
+  },
+  motorcyclesContainer: {
+    gap: 8
+  },
+  motosAvailableCount: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 4
+  },
+  motoChoiceCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.card
+  },
+  motoChoiceCardSelected: {
+    borderColor: colors.primary,
+    backgroundColor: '#F3FAF6'
+  },
+  motoChoiceLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1
+  },
+  platePill: {
+    backgroundColor: colors.charcoal,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4
+  },
+  platePillSelected: {
+    backgroundColor: colors.primary
+  },
+  plateText: {
+    color: colors.white,
+    fontWeight: 'bold',
+    fontSize: 12,
+    letterSpacing: 0.5
+  },
+  plateTextSelected: {
+    color: colors.textDark
+  },
+  motoChoiceTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: colors.text
+  },
+  motoChoiceYear: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 1
+  },
+  checkCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  checkCircleSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary
+  },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
-    padding: 14,
+    padding: 12,
+    fontSize: 14,
     color: colors.text,
     backgroundColor: colors.surface
   },
-
   textArea: {
-    minHeight: 110,
+    minHeight: 90,
     textAlignVertical: 'top'
   },
-
-  createButton: {
+  costNote: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 4,
+    fontStyle: 'italic'
+  },
+  btnSubmit: {
     backgroundColor: colors.primary,
-    padding: 16,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
     alignItems: 'center',
-    marginTop: 30
+    marginTop: 4
   },
-
-  createButtonText: {
+  btnSubmitContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
+  btnSubmitText: {
     color: colors.textDark,
-    fontWeight: 'bold',
-    fontSize: 16
+    fontSize: 15,
+    fontWeight: 'bold'
   },
-
-  buttonDisabled: {
+  btnDisabled: {
     opacity: 0.6
   },
-
-  modalBackground: {
+  modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)'
+    backgroundColor: 'rgba(0, 0, 0, 0.45)'
   },
-
   modalContainer: {
-    maxHeight: '70%',
+    maxHeight: '80%',
     backgroundColor: colors.background,
-    padding: 20,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 20,
+    paddingTop: 18
   },
-
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12
+  },
   modalTitle: {
-    fontSize: 19,
+    fontSize: 17,
     fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 15
+    color: colors.text
   },
-
-  option: {
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border
+  modalCloseBtn: {
+    padding: 4
   },
-
-  optionTitle: {
-    color: colors.text,
-    fontWeight: 'bold',
-    fontSize: 16
+  modalSearchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 12
   },
-
-  optionSubtitle: {
-    color: colors.textSecondary,
-    marginTop: 3,
-    fontSize: 13
+  modalSearchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingLeft: 8,
+    fontSize: 14,
+    color: colors.text
   },
-
-  emptyText: {
-    textAlign: 'center',
-    color: colors.textSecondary,
-    padding: 20
-  },
-
-  cancelButton: {
-    marginTop: 15,
-    padding: 14,
+  emptyClientsBox: {
+    padding: 24,
     alignItems: 'center'
   },
-
-  cancelButtonText: {
-    color: colors.danger,
-    fontWeight: 'bold'
+  emptyClientsText: {
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: 'center'
+  },
+  clientOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
+  },
+  clientAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F3FAF6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12
+  },
+  clientOptionName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: colors.text
+  },
+  clientOptionSub: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2
   }
-
 });

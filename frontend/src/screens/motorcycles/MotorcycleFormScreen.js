@@ -19,8 +19,15 @@ import {
   getMotorcycleById
 } from '../../services/motorcycleService';
 import { handleApiError } from '../../utils/errorHandler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  UserIcon,
+  SearchIcon,
+  CloseIcon
+} from '../../components/common/AppIcons';
 
 export default function MotorcycleFormScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const motorcycleId = route.params?.motorcycleId;
   const preselectedClientId = route.params?.preselectedClientId;
   const isEditing = Boolean(motorcycleId);
@@ -170,7 +177,13 @@ export default function MotorcycleFormScreen({ route, navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.contentContainer,
+        { paddingBottom: Math.max(insets.bottom, 16) + 32 }
+      ]}
+    >
       <Text style={styles.title}>
         {isEditing ? 'Editar Motocicleta' : 'Registrar Nueva Motocicleta'}
       </Text>
@@ -190,7 +203,10 @@ export default function MotorcycleFormScreen({ route, navigation }) {
         {selectedClient ? (
           <View style={styles.clientSelectedInfo}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.clientSelectedName}>👤 {selectedClient.name}</Text>
+              <View style={styles.clientSelectedNameRow}>
+                <UserIcon size={16} color={colors.text} />
+                <Text style={styles.clientSelectedName}>{selectedClient.name}</Text>
+              </View>
               <Text style={styles.clientSelectedDetail}>
                 {selectedClient.phone ? `Tel: ${selectedClient.phone}` : 'Sin teléfono'} • ID: #{selectedClient.id}
               </Text>
@@ -200,7 +216,7 @@ export default function MotorcycleFormScreen({ route, navigation }) {
         ) : (
           <View style={styles.clientPlaceholderRow}>
             <Text style={styles.clientPlaceholderText}>Seleccionar cliente del taller...</Text>
-            <Text style={styles.clientSearchIcon}>🔍</Text>
+            <SearchIcon size={16} color={colors.textSecondary} />
           </View>
         )}
       </TouchableOpacity>
@@ -271,14 +287,14 @@ export default function MotorcycleFormScreen({ route, navigation }) {
         onRequestClose={() => setClientsModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 16) + 16 }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Seleccionar Propietario</Text>
               <TouchableOpacity
                 onPress={() => setClientsModalVisible(false)}
                 style={styles.modalCloseBtn}
               >
-                <Text style={styles.modalCloseText}>✕</Text>
+                <CloseIcon size={18} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -406,6 +422,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between'
+  },
+  clientSelectedNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
   },
   clientSelectedName: {
     fontSize: 15,

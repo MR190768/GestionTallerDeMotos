@@ -10,6 +10,7 @@ import {
   StyleSheet
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthContext } from '../../context/AuthContext';
 import colors from '../../theme/colors';
 import {
@@ -18,10 +19,21 @@ import {
   getTransactions
 } from '../../services/debtService';
 import { handleApiError, getErrorMessage } from '../../utils/errorHandler';
+import {
+  SearchIcon,
+  ClipboardIcon,
+  UserIcon,
+  MotorcycleIcon,
+  CashIcon,
+  CardIcon,
+  BankIcon,
+  ChevronRightIcon
+} from '../../components/common/AppIcons';
 
 const ESPERA_BUSQUEDA = 350;
 
 export default function DebtsScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const { userInfo } = useContext(AuthContext);
 
   const isAdmin =
@@ -242,8 +254,12 @@ export default function DebtsScreen({ navigation }) {
           style={[styles.tabButton, tabActiva === 'services' && styles.tabButtonActive]}
           onPress={() => setTabActiva('services')}
         >
+          <SearchIcon
+            size={16}
+            color={tabActiva === 'services' ? colors.textDark : colors.textSecondary}
+          />
           <Text style={[styles.tabButtonText, tabActiva === 'services' && styles.tabButtonTextActive]}>
-            🔍 Monitoreo de Servicios
+            Monitoreo de Servicios
           </Text>
         </TouchableOpacity>
 
@@ -251,8 +267,12 @@ export default function DebtsScreen({ navigation }) {
           style={[styles.tabButton, tabActiva === 'history' && styles.tabButtonActive]}
           onPress={() => setTabActiva('history')}
         >
+          <ClipboardIcon
+            size={16}
+            color={tabActiva === 'history' ? colors.textDark : colors.textSecondary}
+          />
           <Text style={[styles.tabButtonText, tabActiva === 'history' && styles.tabButtonTextActive]}>
-            📜 Historial de Pagos
+            Historial de Pagos
           </Text>
         </TouchableOpacity>
       </View>
@@ -297,6 +317,9 @@ export default function DebtsScreen({ navigation }) {
           <FlatList
             data={servicios}
             keyExtractor={(item) => item.serviceId.toString()}
+            contentContainerStyle={{
+              paddingBottom: Math.max(insets.bottom, 16) + 30
+            }}
             renderItem={({ item }) => {
               const tieneSaldo = item.remainingBalance > 0;
 
@@ -319,12 +342,20 @@ export default function DebtsScreen({ navigation }) {
                   </View>
 
                   {/* Datos del Cliente y Vehículo */}
-                  <Text style={styles.clientNameText}>
-                    👤 {item.clientName} {item.clientPhone ? `· ${item.clientPhone}` : ''}
-                  </Text>
-                  <Text style={styles.motorcycleText}>
-                    🏍️ {item.motorcycleBrand} {item.motorcycleModel} ({item.licensePlate || 'Sin placa'})
-                  </Text>
+                  <View style={styles.iconInfoRow}>
+                    <UserIcon size={14} color={colors.textSecondary} />
+                    <Text style={styles.clientNameText}>
+                      {item.clientName} {item.clientPhone ? `· ${item.clientPhone}` : ''}
+                    </Text>
+                  </View>
+
+                  <View style={styles.iconInfoRow}>
+                    <MotorcycleIcon size={14} color={colors.textSecondary} />
+                    <Text style={styles.motorcycleText}>
+                      {item.motorcycleBrand} {item.motorcycleModel} ({item.licensePlate || 'Sin placa'})
+                    </Text>
+                  </View>
+
                   <Text style={styles.descriptionText} numberOfLines={2}>
                     {item.serviceDescription}
                   </Text>
@@ -358,7 +389,8 @@ export default function DebtsScreen({ navigation }) {
 
                   {/* Indicador de acción */}
                   <View style={styles.cardFooterAction}>
-                    <Text style={styles.cardActionText}>Gestionar pagos de esta orden →</Text>
+                    <Text style={styles.cardActionText}>Gestionar pagos de esta orden</Text>
+                    <ChevronRightIcon size={14} color={colors.primary} />
                   </View>
                 </TouchableOpacity>
               );
@@ -420,22 +452,37 @@ export default function DebtsScreen({ navigation }) {
           <FlatList
             data={transacciones}
             keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={{
+              paddingBottom: Math.max(insets.bottom, 16) + 30
+            }}
             renderItem={({ item }) => (
               <View style={styles.txCard}>
                 <View style={styles.txHeader}>
                   <Text style={styles.txAmount}>+${item.amount.toFixed(2)}</Text>
                   <View style={styles.methodTag}>
-                    <Text style={styles.methodTagText}>
-                      {item.paymentMethod === 'EFECTIVO'
-                        ? '💵 Efectivo'
-                        : item.paymentMethod === 'TARJETA'
-                        ? '💳 Tarjeta'
-                        : '🏦 Transf.'}
-                    </Text>
+                    {item.paymentMethod === 'EFECTIVO' ? (
+                      <View style={styles.methodTagInner}>
+                        <CashIcon size={13} color={colors.textDark} />
+                        <Text style={styles.methodTagText}>Efectivo</Text>
+                      </View>
+                    ) : item.paymentMethod === 'TARJETA' ? (
+                      <View style={styles.methodTagInner}>
+                        <CardIcon size={13} color={colors.textDark} />
+                        <Text style={styles.methodTagText}>Tarjeta</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.methodTagInner}>
+                        <BankIcon size={13} color={colors.textDark} />
+                        <Text style={styles.methodTagText}>Transf.</Text>
+                      </View>
+                    )}
                   </View>
                 </View>
 
-                <Text style={styles.txClient}>👤 {item.clientName}</Text>
+                <View style={styles.iconInfoRow}>
+                  <UserIcon size={13} color={colors.textSecondary} />
+                  <Text style={styles.txClient}>{item.clientName}</Text>
+                </View>
                 {item.serviceId ? (
                   <Text style={styles.txService}>
                     Orden #{item.serviceId} · {item.motorcycleBrand} {item.motorcycleModel} ({item.licensePlate || 'Sin placa'})
@@ -792,5 +839,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textMuted,
     marginTop: 4,
+  },
+  iconInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginVertical: 2,
+  },
+  methodTagInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
 });

@@ -9,12 +9,19 @@ import {
   ScrollView
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getClientById } from '../../services/clientService';
 import { getMotorcyclesByClient } from '../../services/motorcycleService';
 import { handleApiError } from '../../utils/errorHandler';
 import colors from '../../theme/colors';
+import {
+  MotorcycleIcon,
+  PlusIcon,
+  ChevronRightIcon
+} from '../../components/common/AppIcons';
 
 export default function ClientInformationScreen({route, navigation}) {
+    const insets = useSafeAreaInsets();
     const { clientId } = route.params;
     const [client, setClient] = useState(null);
     const [motorcycles, setMotorcycles] = useState([]);
@@ -93,7 +100,10 @@ export default function ClientInformationScreen({route, navigation}) {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[
+        styles.contentContainer,
+        { paddingBottom: Math.max(insets.bottom, 16) + 32 }
+      ]}
     >
 
       <Text style={styles.title}>
@@ -166,14 +176,18 @@ export default function ClientInformationScreen({route, navigation}) {
 
       {/* Sección de Motocicletas del Cliente */}
       <View style={styles.motosHeaderRow}>
-        <Text style={styles.sectionHeaderTitle}>
-          🏍️ Motocicletas ({motorcycles.length})
-        </Text>
+        <View style={styles.motosTitleRow}>
+          <MotorcycleIcon size={18} color={colors.text} />
+          <Text style={styles.sectionHeaderTitle}>
+            Motocicletas ({motorcycles.length})
+          </Text>
+        </View>
         <TouchableOpacity
           style={styles.btnAddMotoSmall}
           onPress={() => navigation.navigate('MotorcycleForm', { preselectedClientId: client.id })}
         >
-          <Text style={styles.btnAddMotoSmallText}>+ Registrar Moto</Text>
+          <PlusIcon size={13} color={colors.textDark} />
+          <Text style={styles.btnAddMotoSmallText}>Registrar Moto</Text>
         </TouchableOpacity>
       </View>
 
@@ -197,7 +211,10 @@ export default function ClientInformationScreen({route, navigation}) {
               <Text style={styles.motoYearText}>
                 {moto.year ? `Año ${moto.year}` : 'Año no especificado'}
               </Text>
-              <Text style={styles.motoLinkText}>Ver Detalle →</Text>
+              <View style={styles.linkRow}>
+                <Text style={styles.motoLinkText}>Ver Detalle</Text>
+                <ChevronRightIcon size={13} color={colors.primary} />
+              </View>
             </View>
           </TouchableOpacity>
         ))
@@ -302,6 +319,12 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
 
+  motosTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
+  },
+
   sectionHeaderTitle: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -310,15 +333,24 @@ const styles = StyleSheet.create({
 
   btnAddMotoSmall: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 6
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4
   },
 
   btnAddMotoSmallText: {
     color: colors.textDark,
     fontSize: 12,
     fontWeight: 'bold'
+  },
+
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2
   },
 
   motoCard: {

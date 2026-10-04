@@ -11,14 +11,22 @@ import {
   RefreshControl
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../theme/colors';
 import {
   getAllMotorcycles,
   deleteMotorcycle
 } from '../../services/motorcycleService';
 import { handleApiError } from '../../utils/errorHandler';
+import {
+  WrenchIcon,
+  CloseIcon,
+  PlusIcon,
+  SearchIcon
+} from '../../components/common/AppIcons';
 
 export default function MotorcyclesScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [motorcycles, setMotorcycles] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -116,8 +124,9 @@ export default function MotorcyclesScreen({ navigation }) {
 
         <View style={styles.cardFooter}>
           <View style={styles.servicesBadge}>
+            <WrenchIcon size={12} color={colors.textDark} />
             <Text style={styles.servicesText}>
-              🔧 {serviceCount} {serviceCount === 1 ? 'servicio' : 'servicios'}
+              {serviceCount} {serviceCount === 1 ? 'servicio' : 'servicios'}
             </Text>
           </View>
 
@@ -158,7 +167,7 @@ export default function MotorcyclesScreen({ navigation }) {
               style={styles.clearSearchBtn}
               onPress={() => handleSearch('')}
             >
-              <Text style={styles.clearSearchText}>✕</Text>
+              <CloseIcon size={14} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -167,7 +176,8 @@ export default function MotorcyclesScreen({ navigation }) {
           style={styles.btnAdd}
           onPress={() => navigation.navigate('MotorcycleForm')}
         >
-          <Text style={styles.btnAddText}>+ Registrar Moto</Text>
+          <PlusIcon size={14} color={colors.textDark} />
+          <Text style={styles.btnAddText}>Registrar Moto</Text>
         </TouchableOpacity>
       </View>
 
@@ -182,7 +192,10 @@ export default function MotorcyclesScreen({ navigation }) {
           data={motorcycles}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderMotorcycleItem}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={[
+            styles.listContainer,
+            { paddingBottom: Math.max(insets.bottom, 16) + 30 }
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -334,15 +347,18 @@ const styles = StyleSheet.create({
     marginTop: 4
   },
   servicesBadge: {
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#F3FAF6',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4
   },
   servicesText: {
     fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '500'
+    color: colors.textDark,
+    fontWeight: '600'
   },
   cardActions: {
     flexDirection: 'row',

@@ -11,12 +11,19 @@ import {
 } from 'react-native';
 
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import colors from '../../theme/colors';
 import { getAllServices } from '../../services/serviceOrderService';
 import { handleApiError } from '../../utils/errorHandler';
+import {
+  PlusIcon,
+  MotorcycleIcon,
+  UserIcon
+} from '../../components/common/AppIcons';
 
 export default function ServicesScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [services, setServices] = useState([]);
   const [filter, setFilter] = useState('ACTIVE');
   const [loading, setLoading] = useState(true);
@@ -109,17 +116,19 @@ export default function ServicesScreen({ navigation }) {
       </View>
     </View>
 
-    <Text style={styles.motorcycleName}>
-      {item.motorcycleBrand} {item.motorcycleModel}
-    </Text>
+    <View style={styles.cardInfoRow}>
+      <MotorcycleIcon size={14} color={colors.textSecondary} />
+      <Text style={styles.motorcycleName}>
+        {item.motorcycleBrand} {item.motorcycleModel} ({item.licensePlate || 'Sin placa'})
+      </Text>
+    </View>
 
-    <Text style={styles.secondaryInfo}>
-      Placa: {item.licensePlate || 'Sin placa'}
-    </Text>
-
-    <Text style={styles.secondaryInfo}>
-      Cliente: {item.clientName}
-    </Text>
+    <View style={styles.cardInfoRow}>
+      <UserIcon size={14} color={colors.textSecondary} />
+      <Text style={styles.secondaryInfo}>
+        {item.clientName}
+      </Text>
+    </View>
 
     <Text style={styles.description}>
       {item.description}
@@ -158,9 +167,11 @@ export default function ServicesScreen({ navigation }) {
       <TouchableOpacity
         style={styles.createButton}
         onPress={() => navigation.navigate('CreateService')}
+        activeOpacity={0.7}
       >
+        <PlusIcon size={16} color={colors.textDark} />
         <Text style={styles.createButtonText}>
-          + Nueva Orden
+          Nueva Orden
         </Text>
       </TouchableOpacity>
 
@@ -260,6 +271,9 @@ export default function ServicesScreen({ navigation }) {
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderService}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: Math.max(insets.bottom, 16) + 30
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -307,7 +321,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     padding: 13,
     borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     marginBottom: 16,
   },
 
@@ -315,6 +332,13 @@ const styles = StyleSheet.create({
     color: colors.textDark,
     fontWeight: 'bold',
     fontSize: 16,
+  },
+
+  cardInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginVertical: 2,
   },
 
   filters: {

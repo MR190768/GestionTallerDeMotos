@@ -15,7 +15,7 @@ export const handleApiError = (
     const isTimeout = error.code === 'ECONNABORTED' || error.message?.includes('timeout');
 
     Alert.alert(
-      '⚠️ Error de Conexión con el Servidor',
+      'Error de Conexión con el Servidor',
       isTimeout
         ? 'El servidor tardó demasiado en responder (Tiempo de espera agotado).\n\nVerifica que tu backend esté funcionando correctamente.'
         : 'No fue posible conectarse con el servidor backend del taller.\n\n' +

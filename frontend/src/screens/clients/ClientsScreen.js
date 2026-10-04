@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -18,8 +19,14 @@ import {
   deleteClient
 } from '../../services/clientService';
 import { handleApiError } from '../../utils/errorHandler';
+import {
+  PlusIcon,
+  UserIcon,
+  SearchIcon
+} from '../../components/common/AppIcons';
 
 export default function ClientsScreen({navigation}) {
+  const insets = useSafeAreaInsets();
   const [clients, setClients] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -127,9 +134,10 @@ const handleSearch = async (text) => {
         onChangeText={handleSearch}
       />
 
-      <TouchableOpacity style = {styles.btnNewClient} onPress = {() => navigation.navigate('AddClient')}>
+      <TouchableOpacity style={styles.btnNewClient} onPress={() => navigation.navigate('AddClient')} activeOpacity={0.7}>
+        <PlusIcon size={16} color={colors.textDark} />
         <Text style={styles.btnNewClientText}>
-            Agregar nuevo cliente
+          Agregar nuevo cliente
         </Text>
       </TouchableOpacity>
 
@@ -165,6 +173,9 @@ const handleSearch = async (text) => {
         <FlatList
           data={filteredClients}
           keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={{
+            paddingBottom: Math.max(insets.bottom, 16) + 30
+          }}
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.clientCard} onPress = {() => navigation.navigate('ClientInformation', {clientId : item.id})}>
               <Text style={styles.clientName}>{item.name}</Text>
@@ -271,9 +282,12 @@ const styles = StyleSheet.create({
   },
   btnNewClient: {
     backgroundColor: colors.primary,
-    padding: 14,
+    padding: 13,
     borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     marginBottom: 15
   },
   btnNewClientText: {

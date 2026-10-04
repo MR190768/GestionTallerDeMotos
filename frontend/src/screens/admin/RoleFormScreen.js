@@ -17,8 +17,11 @@ import {
   updateRole
 } from '../../services/roleService';
 import { handleApiError } from '../../utils/errorHandler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CheckIcon } from '../../components/common/AppIcons';
 
 export default function RoleFormScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const roleId = route.params?.roleId;
   const isEditing = Boolean(roleId);
 
@@ -113,7 +116,13 @@ export default function RoleFormScreen({ route, navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.contentContainer,
+        { paddingBottom: Math.max(insets.bottom, 16) + 32 }
+      ]}
+    >
       <Text style={styles.title}>
         {isEditing ? 'Editar Rol y Permisos' : 'Crear Nuevo Rol'}
       </Text>
@@ -162,9 +171,9 @@ export default function RoleFormScreen({ route, navigation }) {
                 activeOpacity={0.7}
               >
                 <View style={styles.permCheckbox}>
-                  <Text style={[styles.checkboxMark, isSelected && styles.checkboxMarkActive]}>
-                    {isSelected ? '✓' : ''}
-                  </Text>
+                  {isSelected ? (
+                    <CheckIcon size={12} color={colors.textDark} />
+                  ) : null}
                 </View>
                 <View style={styles.permInfo}>
                   <Text style={[styles.permName, isSelected && styles.permNameActive]}>
