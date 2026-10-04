@@ -303,7 +303,7 @@ export default function ServicePaymentDetailScreen({ route, navigation }) {
 
           <Text style={styles.inputLabel}>Método de Pago</Text>
           <View style={styles.methodsRow}>
-            {['EFECTIVO', 'TARJETA', 'TRANSFERENCIA'].map((m) => {
+            {['EFECTIVO', 'TRANSFERENCIA'].map((m) => {
               const isActive = metodoPago === m;
               return (
                 <TouchableOpacity
@@ -314,13 +314,11 @@ export default function ServicePaymentDetailScreen({ route, navigation }) {
                   <View style={styles.methodButtonInner}>
                     {m === 'EFECTIVO' ? (
                       <CashIcon size={14} color={isActive ? colors.textDark : colors.textSecondary} />
-                    ) : m === 'TARJETA' ? (
-                      <CardIcon size={14} color={isActive ? colors.textDark : colors.textSecondary} />
                     ) : (
                       <BankIcon size={14} color={isActive ? colors.textDark : colors.textSecondary} />
                     )}
                     <Text style={[styles.methodButtonText, isActive && styles.methodButtonTextActive]}>
-                      {m === 'EFECTIVO' ? 'Efectivo' : m === 'TARJETA' ? 'Tarjeta' : 'Transf.'}
+                      {m === 'EFECTIVO' ? 'Efectivo' : 'Transf.'}
                     </Text>
                   </View>
                 </TouchableOpacity>
