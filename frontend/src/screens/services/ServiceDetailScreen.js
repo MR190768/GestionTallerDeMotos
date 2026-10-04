@@ -474,27 +474,11 @@ export default function ServiceDetailScreen({ route }) {
       )}
 
       {service.status === 'COMPLETED' && (
-        <>
-          <View style={styles.completedBox}>
-            <Text style={styles.completedText}>
-              Servicio finalizado
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.paymentButton}
-            onPress={() =>
-              Alert.alert(
-                'Registrar pago',
-                'Esta opción será conectada al módulo de pagos.'
-              )
-            }
-          >
-            <Text style={styles.paymentButtonText}>
-              Registrar pago
-            </Text>
-          </TouchableOpacity>
-        </>
+        <View style={styles.completedBox}>
+          <Text style={styles.completedText}>
+            Servicio finalizado
+          </Text>
+        </View>
       )}
 
       {service.status !== 'COMPLETED' &&

@@ -23,6 +23,7 @@ import ServiceDetailScreen from '../screens/services/ServiceDetailScreen';
 import CreateServiceScreen from '../screens/services/CreateServiceScreen';
 import PartsScreen from '../screens/parts/PartsScreen';
 import DebtsScreen from '../screens/debts/DebtsScreen';
+import ServicePaymentDetailScreen from '../screens/debts/ServicePaymentDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -133,7 +134,13 @@ export default function MainNavigator() {
       <Stack.Screen
         name="Debts"
         component={DebtsScreen}
-        options={{ title: 'Finanzas y Deudas' }}
+        options={{ title: 'Finanzas y Pagos' }}
+      />
+
+      <Stack.Screen
+        name="ServicePaymentDetail"
+        component={ServicePaymentDetailScreen}
+        options={{ title: 'Gestión de Pagos' }}
       />
 
       {/* Módulos de Administración */}
